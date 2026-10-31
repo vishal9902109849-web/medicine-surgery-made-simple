@@ -1,0 +1,411 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Medicine and Surgery Made Simple by vishal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#102d50;--blue:#17669d;--light:#eaf4fc;--bg:#f5f8fc}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:var(--bg);color:#24364c;line-height:1.6}
+header{background:white;padding:17px 6%;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e3eaf1;position:sticky;top:0;z-index:5}
+.brand{color:var(--navy);font-weight:800;font-size:19px;line-height:1.3}
+.brand span{display:block;font-size:16px}
+.brand small{display:block;text-align:right;color:var(--blue);font-weight:400;font-size:12px}
+nav{display:flex;gap:15px}
+nav a{color:var(--navy);text-decoration:none;font-size:13px;font-weight:bold}
+.hero{padding:70px 7%;background:linear-gradient(120deg,#102d50,#17669d);color:white}
+.hero small{letter-spacing:3px;color:#b9dcf7}
+.hero h1{font-size:clamp(34px,6vw,55px);line-height:1.15;margin:20px 0;max-width:700px}
+.hero h1 span{color:#a9d8f7}
+.hero p{max-width:550px;color:#dceafa}
+main{max-width:1100px;margin:auto;padding:40px 5%}
+h2{color:var(--navy);font-size:25px}
+.sub{color:#77869a;font-size:14px;margin:5px 0 22px}
+.search{display:flex;background:white;border:1px solid #ddd;border-radius:9px;padding:6px;margin-bottom:35px}
+.search input{flex:1;min-width:0;padding:12px;border:0;outline:0}
+button{cursor:pointer;border:0;border-radius:7px;padding:11px 16px;font-weight:bold}
+.primary{background:var(--blue);color:white}
+.secondary{background:var(--light);color:var(--blue)}
+.dark{background:var(--navy);color:white}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+.card{background:white;border:1px solid #e1e8f0;border-radius:12px;padding:24px;cursor:pointer}
+.card:hover{border-color:var(--blue)}
+.card h3{font-size:23px;color:var(--navy);margin:8px 0}
+.card p{color:#78869a;font-size:14px}
+.icon{font-size:32px}
+#library,#admin{display:none;margin-top:40px}
+.panel{background:var(--navy);color:white;padding:23px;border-radius:12px;margin-bottom:18px}
+.panel h2{color:white}
+.panel p{color:#cbdcf0;font-size:13px}
+.filters{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}
+.filter.active{background:var(--navy);color:white}
+.resource{background:white;border:1px solid #e0e7ef;border-radius:10px;padding:17px;margin-bottom:12px}
+.resource h3{color:var(--navy);font-size:17px}
+.resource p{font-size:13px;color:#77869a;margin:4px 0}
+.resource a{display:inline-block;margin-top:10px;color:var(--blue);font-weight:bold;text-decoration:none}
+.resource-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#admin{background:white;border:1px solid #e0e7ef;border-radius:12px;padding:23px}
+.field{margin:13px 0}
+.field label{display:block;font-size:13px;font-weight:bold;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:12px;border:1px solid #d8e0ea;border-radius:7px;background:white;font:inherit}
+.field textarea{min-height:75px}
+#loginBox{max-width:430px;margin:auto}
+.status{font-size:13px;margin:12px 0;color:#17669d;overflow-wrap:anywhere}
+.notice{background:#eaf4fc;padding:22px;border-radius:10px;margin-top:35px}
+footer{text-align:center;background:var(--navy);color:white;padding:30px;font-size:13px}
+@media(max-width:560px){
+ header{padding:13px 4%}
+ .brand{font-size:15px}
+ .brand span{font-size:13px}
+ nav{gap:9px}
+ nav a{font-size:11px}
+ .hero{padding:48px 6%}
+ main{padding:32px 4%}
+ .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+ <div class="brand">Medicine and Surgery
+  <span>Made Simple</span>
+  <small>by vishal</small>
+ </div>
+ <nav>
+  <a href="#home">Home</a>
+  <a href="#subjects">Subjects</a>
+  <a href="#admin" onclick="showAdmin()">Admin</a>
+ </nav>
+</header>
+
+<section class="hero" id="home">
+ <small>MEDICAL EDUCATION PLATFORM</small>
+ <h1>Medicine and Surgery <span>Made Simple.</span></h1>
+ <p>Understand better. Revise smarter. Explore comprehensive medical notes and visual mind maps.</p>
+</section>
+
+<main>
+ <div class="search">
+  <input id="search" placeholder="Search notes and mind maps..." oninput="renderResources()">
+  <button class="primary" onclick="renderResources()">Search</button>
+ </div>
+
+ <section id="subjects">
+  <h2>Explore Subjects</h2>
+  <p class="sub">Choose your area of study.</p>
+  <div class="grid">
+   <div class="card" onclick="chooseSubject('Medicine')">
+    <div class="icon">🩺</div>
+    <h3>Medicine</h3>
+    <p>Clinical medicine and systemic disorders.</p>
+    <button class="secondary" style="margin-top:17px">Explore Medicine →</button>
+   </div>
+   <div class="card" onclick="chooseSubject('Surgery')">
+    <div class="icon">⚕</div>
+    <h3>Surgery</h3>
+    <p>Surgical principles and specialties.</p>
+    <button class="secondary" style="margin-top:17px">Explore Surgery →</button>
+   </div>
+  </div>
+ </section>
+
+ <section id="library">
+  <div class="panel">
+   <h2 id="libraryTitle">Medicine</h2>
+   <p>Browse published notes and mind maps.</p>
+  </div>
+  <div class="filters">
+   <button class="filter active" onclick="setFilter('All',this)">All</button>
+   <button class="filter secondary" onclick="setFilter('Notes',this)">Notes</button>
+   <button class="filter secondary" onclick="setFilter('Mind Maps',this)">Mind Maps</button>
+  </div>
+  <div id="resourceList"></div>
+  <p id="empty" class="sub">No resources available yet.</p>
+ </section>
+
+ <section id="admin">
+  <div id="loginBox">
+   <h2>Administrator Login</h2>
+   <p class="sub">Private access for the website administrator.</p>
+   <form id="loginForm">
+    <div class="field">
+     <label>Email</label>
+     <input id="email" type="email" required placeholder="Your admin email">
+    </div>
+    <div class="field">
+     <label>Password</label>
+     <input id="password" type="password" required placeholder="Your password">
+    </div>
+    <button class="primary" type="submit">Login</button>
+   </form>
+  </div>
+
+  <div id="adminPanel" style="display:none">
+   <h2>Admin Dashboard</h2>
+   <p class="sub">Manage your medical learning resources.</p>
+
+   <form id="uploadForm">
+    <div class="field">
+     <label>Resource title</label>
+     <input id="title" required placeholder="Example: Breast carcinoma">
+    </div>
+    <div class="field">
+     <label>Subject</label>
+     <select id="subject">
+      <option>Medicine</option>
+      <option>Surgery</option>
+     </select>
+    </div>
+    <div class="field">
+     <label>Resource type</label>
+     <select id="type">
+      <option>Notes</option>
+      <option>Mind Maps</option>
+     </select>
+    </div>
+    <div class="field">
+     <label>Description</label>
+     <textarea id="description" placeholder="Short description"></textarea>
+    </div>
+    <div class="field">
+     <label>Upload PDF or HTML file</label>
+     <input id="file" type="file" accept=".pdf,.html,.htm" required>
+    </div>
+    <button class="primary" type="submit">Upload and Publish</button>
+   </form>
+
+   <p id="uploadStatus" class="status"></p>
+   <hr style="margin:25px 0;border:0;border-top:1px solid #ddd">
+   <h3>Your uploaded resources</h3>
+   <div id="adminResources"></div>
+   <button class="secondary" onclick="logout()">Logout</button>
+  </div>
+ </section>
+
+ <div class="notice">
+  <h2>Learn. Understand. Apply.</h2>
+  <p>Medicine and Surgery Made Simple by vishal is dedicated to medical education through organised notes and mind maps.</p>
+ </div>
+</main>
+
+<footer>
+ <h3>Medicine and Surgery Made Simple</h3>
+ <p>by vishal</p>
+ <p>Notes · Mind Maps · Medical Learning</p>
+ <p style="margin-top:12px">For educational purposes only.</p>
+</footer>
+
+<script>
+const SUPABASE_URL = "https://xsduelyqbytdbbyfkiq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_EBwOOi98q-gISwA49unvsQ_eirApWLZ";
+
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let currentSubject = "Medicine";
+let currentFilter = "All";
+let isAdmin = false;
+
+function showAdmin(){
+ document.getElementById("admin").style.display="block";
+ document.getElementById("admin").scrollIntoView({behavior:"smooth"});
+}
+
+function chooseSubject(subject){
+ currentSubject=subject;
+ currentFilter="All";
+ document.getElementById("libraryTitle").textContent=subject;
+ document.getElementById("library").style.display="block";
+ document.querySelectorAll(".filter").forEach((b,i)=>{
+  b.classList.toggle("active",i===0);
+ });
+ renderResources();
+ document.getElementById("library").scrollIntoView({behavior:"smooth"});
+}
+
+function setFilter(type,button){
+ currentFilter=type;
+ document.querySelectorAll(".filter").forEach(b=>b.classList.remove("active"));
+ button.classList.add("active");
+ renderResources();
+}
+
+async function renderResources(){
+ const list=document.getElementById("resourceList");
+ const empty=document.getElementById("empty");
+ list.innerHTML="<p>Loading resources...</p>";
+ try{
+  let q=db.from("resources").select("*").eq("subject",currentSubject).eq("is_published",true).order("created_at",{ascending:false});
+  if(currentFilter!=="All") q=q.eq("resource_type",currentFilter);
+  const {data,error}=await q;
+  if(error) throw error;
+  const term=document.getElementById("search").value.toLowerCase();
+  const items=(data||[]).filter(r=>(r.title+" "+(r.description||"")).toLowerCase().includes(term));
+  list.innerHTML="";
+  empty.style.display=items.length?"none":"block";
+  items.forEach(r=>{
+   const card=document.createElement("div");
+   card.className="resource";
+   const h=document.createElement("h3");
+   h.textContent=r.title;
+   const p=document.createElement("p");
+   p.textContent=r.subject+" · "+r.resource_type+" · "+(r.description||"");
+   const a=document.createElement("a");
+   a.href=db.storage.from("medical-resources").getPublicUrl(r.file_path).data.publicUrl;
+   a.target="_blank";
+   a.rel="noopener noreferrer";
+   a.textContent=r.file_name.toLowerCase().endsWith(".html")||r.file_name.toLowerCase().endsWith(".htm")?"Open Mind Map ↗":"View / Download PDF ↗";
+   card.append(h,p,a);
+   list.appendChild(card);
+  });
+ }catch(e){
+  list.innerHTML="";
+  empty.style.display="block";
+  empty.textContent="Could not load resources: "+e.message;
+ }
+}
+
+document.getElementById("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const {error}=await db.auth.signInWithPassword({
+  email:document.getElementById("email").value,
+  password:document.getElementById("password").value
+ });
+ if(error){alert("Login failed: "+error.message);return;}
+ await checkAdmin();
+});
+
+async function checkAdmin(){
+ const {data:{session}}=await db.auth.getSession();
+ if(!session){showLogin();return;}
+ const {data,error}=await db.rpc("is_site_admin");
+ if(error||data!==true){
+  await db.auth.signOut();
+  alert("This account is not authorised as an administrator.");
+  showLogin();
+  return;
+ }
+ isAdmin=true;
+ document.getElementById("loginBox").style.display="none";
+ document.getElementById("adminPanel").style.display="block";
+ await loadAdminResources();
+}
+
+function showLogin(){
+ isAdmin=false;
+ document.getElementById("loginBox").style.display="block";
+ document.getElementById("adminPanel").style.display="none";
+}
+
+async function logout(){
+ await db.auth.signOut();
+ showLogin();
+}
+
+document.getElementById("uploadForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ if(!isAdmin)return;
+ const status=document.getElementById("uploadStatus");
+ const file=document.getElementById("file").files[0];
+ if(!file)return;
+ const allowed=/\.(pdf|html|htm)$/i.test(file.name);
+ if(!allowed){status.textContent="Only PDF and HTML files are accepted.";return;}
+ if(file.size>25*1024*1024){status.textContent="Maximum file size is 25 MB.";return;}
+ status.textContent="Uploading...";
+ const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+ const path=crypto.randomUUID()+"-"+safeName;
+ try{
+  const {error:uploadError}=await db.storage.from("medical-resources").upload(path,file,{upsert:false});
+  if(uploadError)throw uploadError;
+  const {error:insertError}=await db.from("resources").insert({
+   title:document.getElementById("title").value,
+   subject:document.getElementById("subject").value,
+   resource_type:document.getElementById("type").value,
+   description:document.getElementById("description").value,
+   file_path:path,
+   file_name:file.name,
+   is_published:true
+  });
+  if(insertError){
+   await db.storage.from("medical-resources").remove([path]);
+   throw insertError;
+  }
+  status.textContent="Resource uploaded and published successfully.";
+  e.target.reset();
+  await loadAdminResources();
+  await renderResources();
+ }catch(err){
+  status.textContent="Upload failed: "+err.message;
+ }
+});
+
+async function loadAdminResources(){
+ const box=document.getElementById("adminResources");
+ box.textContent="Loading...";
+ const {data,error}=await db.from("resources").select("*").order("created_at",{ascending:false});
+ if(error){box.textContent=error.message;return;}
+ box.innerHTML="";
+ (data||[]).forEach(r=>{
+  const div=document.createElement("div");
+  div.className="resource";
+  const h=document.createElement("h3");
+  h.textContent=r.title;
+  const p=document.createElement("p");
+  p.textContent=r.subject+" · "+r.resource_type+" · "+(r.is_published?"Published":"Unpublished");
+  const link=document.createElement("a");
+  link.href=db.storage.from("medical-resources").getPublicUrl(r.file_path).data.publicUrl;
+  link.target="_blank";
+  link.rel="noopener noreferrer";
+  link.textContent="View file ↗";
+  const actions=document.createElement("div");
+  actions.className="resource-actions";
+  const toggle=document.createElement("button");
+  toggle.className="secondary";
+  toggle.textContent=r.is_published?"Unpublish":"Publish";
+  toggle.onclick=()=>togglePublish(r);
+  const del=document.createElement("button");
+  del.className="dark";
+  del.textContent="Delete";
+  del.onclick=()=>deleteResource(r);
+  actions.append(toggle,del);
+  div.append(h,p,link,actions);
+  box.appendChild(div);
+ });
+ if(!data||!data.length)box.textContent="No resources uploaded yet.";
+}
+
+async function togglePublish(r){
+ const {error}=await db.from("resources").update({is_published:!r.is_published}).eq("id",r.id);
+ if(error){alert(error.message);return;}
+ await loadAdminResources();
+ await renderResources();
+}
+
+async function deleteResource(r){
+ if(!confirm("Permanently delete "+r.title+"?"))return;
+ const {error:removeError}=await db.storage.from("medical-resources").remove([r.file_path]);
+ if(removeError){alert("File deletion failed: "+removeError.message);return;}
+ const {error}=await db.from("resources").delete().eq("id",r.id);
+ if(error){alert(error.message);return;}
+ await loadAdminResources();
+ await renderResources();
+}
+
+db.auth.onAuthStateChange((_event,session)=>{
+ if(!session){
+  isAdmin=false;
+  showLogin();
+ }
+});
+
+db.auth.getSession().then(({data})=>{
+ if(data.session)checkAdmin();
+});
+
+renderResources();
+</script>
+</body>
+</html>
