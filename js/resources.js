@@ -9,6 +9,7 @@ const urlFor = (path) =>
 const extOf = (path) => (path.split(".").pop() || "").toLowerCase();
 const isImage = (e) => ["png", "jpg", "jpeg", "webp", "gif"].includes(e);
 const isHtml = (e) => e === "html" || e === "htm";
+const shareUrl = (r) => location.origin + location.pathname + "#" + r.id;
 
 // Added to every mind map so taps on links can be handled by this page.
 const BRIDGE =
@@ -33,6 +34,7 @@ async function load() {
   }
   all = data || [];
   render();
+  openFromHash();
 }
 
 function render() {
@@ -92,7 +94,28 @@ function card(r) {
   btn.textContent = isHtml(ext) ? "Open mind map" : "Open";
   btn.addEventListener("click", () => open(r));
   el.appendChild(btn);
+
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.className = "ghost";
+  copy.style.marginTop = "8px";
+  copy.style.width = "100%";
+  copy.textContent = "Copy link";
+  copy.addEventListener("click", () => copyLink(r, copy));
+  el.appendChild(copy);
   return el;
+}
+
+async function copyLink(r, btn) {
+  const link = shareUrl(r);
+  try {
+    await navigator.clipboard.writeText(link);
+    btn.textContent = "Link copied";
+  } catch (_) {
+    window.prompt("Copy this link:", link);
+    return;
+  }
+  setTimeout(() => (btn.textContent = "Copy link"), 1800);
 }
 
 // Supabase serves .html as plain text, so we fetch the text and show it
@@ -105,6 +128,7 @@ async function open(r) {
     window.open(url, "_blank", "noopener");
     return;
   }
+  history.replaceState(null, "", "#" + r.id);
   $("viewerTitle").textContent = r.title;
   $("viewer").hidden = false;
   document.body.style.overflow = "hidden";
@@ -120,6 +144,20 @@ async function open(r) {
   }
 }
 
+// Opens the mind map named in the address, e.g. resources.html#<id>
+function openFromHash() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (!id) return;
+  const match = all.find((r) => r.id === id);
+  if (match) {
+    open(match);
+  } else {
+    $("status").hidden = false;
+    $("status").textContent =
+      "That resource is not available. It may have been hidden or removed.";
+  }
+}
+
 // A link was tapped inside a mind map.
 function handleLink(href) {
   if (/^https?:\/\//i.test(href)) {
@@ -132,9 +170,7 @@ function handleLink(href) {
   } catch (_) {}
   name = name.toLowerCase();
 
-  const match = all.find(
-    (r) => (r.file_name || "").toLowerCase() === name
-  );
+  const match = all.find((r) => (r.file_name || "").toLowerCase() === name);
   if (match) {
     open(match);
   } else {
@@ -149,12 +185,17 @@ function closeViewer() {
   $("viewer").hidden = true;
   $("frame").srcdoc = "";
   document.body.style.overflow = "";
+  history.replaceState(null, "", location.pathname);
 }
 
 window.addEventListener("message", (ev) => {
   if (ev.source !== $("frame").contentWindow) return;
   const href = ev.data && ev.data.mindmapLink;
   if (typeof href === "string") handleLink(href);
+});
+
+window.addEventListener("hashchange", () => {
+  if (all.length) openFromHash();
 });
 
 $("closeBtn").addEventListener("click", closeViewer);
