@@ -263,8 +263,7 @@ async function renderResources(){
    a.href = r.file_path.startsWith("http")
     ? r.file_path
     : "./" + r.file_path;
-      if(/\.pdf$/i.test(r.file_name)) a.href="/pdf.html?file="+encodeURIComponent(a.href);
-   a.target="_blank";
+if(/\.pdf$/i.test(r.file_name||"")||/\.pdf$/i.test(r.file_path)) a.href="/pdf.html?file="+encodeURIComponent(a.href);   a.target="_blank";
    a.rel="noopener noreferrer";
    a.textContent=r.file_name.toLowerCase().endsWith(".html")||r.file_name.toLowerCase().endsWith(".htm")?"Open Mind Map ↗":"View / Download PDF ↗";
    card.append(h,p,a);
