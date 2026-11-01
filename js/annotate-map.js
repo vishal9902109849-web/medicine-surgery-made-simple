@@ -294,6 +294,12 @@
   }, "annB", rowAct);
 
   // ---------- actions ----------
+ function recolorSel(c) {
+  if (!sel.length) return false;
+  sel.forEach(function (s) { s.c = c; s.el.setAttribute("stroke", c); });
+  save();
+  return true;
+ }
   function undo() {
     var s = strokes.pop();
     if (s && s.el.parentNode) s.el.parentNode.removeChild(s.el);
