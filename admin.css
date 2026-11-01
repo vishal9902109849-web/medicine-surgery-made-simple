@@ -19,3 +19,6 @@ button.ghost{background:transparent;border:1px solid var(--line);width:auto;padd
 .spinner{width:16px;height:16px;border:2px solid #fff6;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
+.progress{position:relative;height:22px;background:#0b1220;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-bottom:16px}
+.progress-bar{height:100%;width:0%;background:var(--blue);transition:width .15s}
+.progress span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.75rem}
