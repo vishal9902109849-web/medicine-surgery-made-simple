@@ -1,6 +1,7 @@
 import { login, logout, getSessionUser, onAuthChange } from "./js/auth.js";
 import { showMessage, setLoading, showView } from "./js/ui.js";
 import { publishResource, validateForm } from "./js/upload.js";
+import { refreshManager } from "./js/manage.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -60,6 +61,7 @@ async function handlePublish(e) {
     await publishResource(fields, setProgress);
     showMessage(msg, `Published "${fields.title.trim()}" successfully.`, "success");
     $("uploadForm").reset();
+    refreshManager();
   } catch (err) {
     showMessage(msg, err.message || "Upload failed.", "error");
   } finally {
@@ -68,9 +70,19 @@ async function handlePublish(e) {
   }
 }
 
+let managerLoadedFor = null;
+
 function render(user) {
   showView(!!user);
-  if (user) $("who").textContent = user.email;
+  if (user) {
+    $("who").textContent = user.email;
+    if (managerLoadedFor !== user.id) {
+      managerLoadedFor = user.id;
+      refreshManager();
+    }
+  } else {
+    managerLoadedFor = null;
+  }
 }
 
 async function init() {
