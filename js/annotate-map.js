@@ -235,6 +235,7 @@
   var bPen = mkBtn("✏️ Pen", function () { tool = "pen"; refresh(); }, "annB", rowTool);
   var bMarker = mkBtn("🖍 Marker", function () { tool = "marker"; refresh(); }, "annB", rowTool);
   var bErase = mkBtn("🧽 Eraser", function () { tool = "erase"; refresh(); }, "annB", rowTool);
+  var bSel = mkBtn("⬚ Select", function () { tool = "select"; refresh(); }, "annB", rowTool);
 
   var gSize = group("Thickness", panel);
   var rowSize = el("div", "annRow", null, gSize);
