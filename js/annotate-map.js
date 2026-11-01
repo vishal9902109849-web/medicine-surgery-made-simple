@@ -609,7 +609,5 @@ undo = function () {
 };
   applyCorner();
   setState("closed");
-var fp = {}, fwd = false;
-function fsend(type, id, x, y, pt) {
 
 })();
