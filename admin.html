@@ -23,12 +23,47 @@
     </form>
   </section>
 
-  <section id="dashView" class="card" hidden>
-    <div class="bar">
-      <div><h2 style="margin:0">Dashboard</h2><small id="who"></small></div>
-      <button type="button" id="logoutBtn" class="ghost">Logout</button>
+  <section id="dashView" hidden>
+    <div class="card">
+      <div class="bar">
+        <div><h2 style="margin:0">Dashboard</h2><small id="who"></small></div>
+        <button type="button" id="logoutBtn" class="ghost">Logout</button>
+      </div>
     </div>
-    <p style="color:var(--muted)">Upload panel arrives in Step 2.</p>
+
+    <div class="card">
+      <h2>Upload Resource</h2>
+      <div id="uploadMsg" class="msg" hidden></div>
+      <form id="uploadForm">
+        <label for="title">Title</label>
+        <input id="title" maxlength="120" placeholder="e.g. Breast Mind Map" required>
+
+        <label for="description">Description (optional)</label>
+        <textarea id="description" rows="3" maxlength="500" placeholder="Short summary"></textarea>
+
+        <label for="subject">Subject</label>
+        <select id="subject">
+          <option>Medicine</option>
+          <option>Surgery</option>
+        </select>
+
+        <label for="type">Type</label>
+        <select id="type">
+          <option>Mind Maps</option>
+          <option>Notes</option>
+        </select>
+
+        <label for="file">File (HTML, PDF or image, max 50 MB)</label>
+        <input type="file" id="file" accept=".html,.htm,.pdf,.png,.jpg,.jpeg,.webp,.gif">
+
+        <div id="progressWrap" class="progress" hidden>
+          <div id="progressBar" class="progress-bar"></div>
+          <span id="progressText">0%</span>
+        </div>
+
+        <button type="submit" id="publishBtn">Publish Resource</button>
+      </form>
+    </div>
   </section>
 </div>
 
