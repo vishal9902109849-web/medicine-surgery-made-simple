@@ -297,6 +297,7 @@
 
   // ---------- actions ----------
  function recolorSel(c) {
+   alert("selected: " + sel.length);
   if (!sel.length) return false;
   sel.forEach(function (s) { s.c = c; s.el.setAttribute("stroke", c); });
   save();
