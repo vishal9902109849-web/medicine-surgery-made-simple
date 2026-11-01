@@ -609,5 +609,32 @@ undo = function () {
 };
   applyCorner();
   setState("closed");
-
+var autoMove = false, backT = null, down = {}, capIds = {};
+catcher.addEventListener("pointerdown", function (e) {
+  capIds[e.pointerId] = true;
+  if (nActive >= 2 && drawMode) {
+    Object.keys(capIds).forEach(function (id) {
+      try { catcher.releasePointerCapture(+id); } catch (_) {}
+    });
+    capIds = {};
+    cur = null; erasing = false; selMode = null; nActive = 0;
+    autoMove = true;
+    setMode(false);
+  }
+});
+document.addEventListener("pointerdown", function (e) {
+  down[e.pointerId] = true;
+  clearTimeout(backT);
+}, true);
+function backUp(e) {
+  delete down[e.pointerId];
+  delete capIds[e.pointerId];
+  if (!autoMove || Object.keys(down).length) return;
+  clearTimeout(backT);
+  backT = setTimeout(function () {
+    if (autoMove && !Object.keys(down).length) { autoMove = false; setMode(true); }
+  }, 1500);
+}
+document.addEventListener("pointerup", backUp, true);
+document.addEventListener("pointercancel", backUp, true);
 })();
