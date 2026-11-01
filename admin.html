@@ -59,28 +59,35 @@ button:hover{
 
 <h1>Medicine & Surgery Made Simple</h1>
 
+<h3>Admin Login</h3>
+
+<input id="email" type="email" placeholder="Admin Email">
+
+<input id="password" type="password" placeholder="Password">
+
+<button type="button" id="loginBtn">Login</button>
+
+<hr style="margin:30px 0;">
+
 <h3>Admin Upload Panel</h3>
 
 <input id="title" placeholder="Title">
 
-<textarea id="description"
-placeholder="Description"></textarea>
+<textarea id="description" placeholder="Description"></textarea>
 
 <select id="subject">
-<option>Medicine</option>
-<option>Surgery</option>
+    <option>Medicine</option>
+    <option>Surgery</option>
 </select>
 
 <select id="type">
-<option>Mind Maps</option>
-<option>Notes</option>
+    <option>Mind Maps</option>
+    <option>Notes</option>
 </select>
 
 <input type="file" id="file">
 
-<button>
-Publish Resource
-</button>
+<button type="button" id="uploadBtn">Publish Resource</button>
 
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
