@@ -200,10 +200,16 @@ footer{text-align:center;background:var(--navy);color:white;padding:30px;font-si
 </footer>
 
 <script>
-const SUPABASE_URL = "https://xsduelyqbytdbbyfkiq.supabase.co";
+const SUPABASE_URL = "https://xsduelyqbytddbfyfkiq.supabase.co";
+
 const SUPABASE_KEY = "sb_publishable_EBwOOi98q-gISwA49unvsQ_eirApWLZ";
 
-const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+
 
 let currentSubject = "Medicine";
 let currentFilter = "All";
