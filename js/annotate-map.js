@@ -35,6 +35,10 @@
     "position:absolute;left:0;top:0;overflow:visible;pointer-events:none;z-index:50;" +
     (useBody ? "" : "width:100%;height:100%;");
   host.appendChild(svg);
+  if (!useBody && (host.offsetWidth < 2 || host.offsetHeight < 2)) {
+    svg.style.width = "1px";
+    svg.style.height = "1px";
+  }
 
   function sizeBodySvg() {
     if (!useBody) return;
