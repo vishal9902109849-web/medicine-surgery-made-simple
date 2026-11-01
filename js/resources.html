@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resources | Medicine & Surgery Made Simple by Vishal</title>
+<link rel="stylesheet" href="admin.css">
+<style>
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.filters input{grid-column:1/-1}
+.grid{display:grid;gap:14px;margin-top:6px}
+.res{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.res h3{margin:0 0 6px;font-size:1.05rem}
+.res .meta{color:var(--muted);font-size:.8rem;margin-bottom:8px}
+.res p{margin:0 0 12px;font-size:.9rem}
+.res img{width:100%;border-radius:10px;margin-bottom:10px}
+#status{color:var(--muted);text-align:center;padding:20px}
+#viewer{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column}
+#viewer header{display:flex;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+#viewer header span{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#frame{flex:1;width:100%;border:0;background:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Medicine &amp; Surgery Resources</h1>
+
+  <div class="filters card">
+    <input id="fSearch" type="search" placeholder="Search…">
+    <select id="fSubject">
+      <option>All</option><option>Medicine</option><option>Surgery</option>
+    </select>
+    <select id="fType">
+      <option>All</option><option>Mind Maps</option><option>Notes</option>
+    </select>
+  </div>
+
+  <div id="status">Loading…</div>
+  <div id="grid" class="grid"></div>
+</div>
+
+<div id="viewer" hidden>
+  <header>
+    <span id="viewerTitle"></span>
+    <button type="button" id="closeBtn" class="ghost">Close</button>
+  </header>
+  <iframe id="frame" sandbox="allow-scripts" title="Mind map"></iframe>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script type="module" src="js/resources.js"></script>
+</body>
+</html>
