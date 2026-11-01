@@ -609,7 +609,69 @@
     n = Math.min(infos.length, Math.max(1, n));
     view.y = 10 - infos[n - 1].div.offsetTop * view.k;
     apply();
-  });applyCorner();
+  });  // ---------- save PDF with marks ----------
+  function loadPdfLib() {
+    return new Promise(function (ok, bad) {
+      if (window.PDFLib) return ok();
+      var s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
+      s.onload = ok;
+      s.onerror = function () { bad(new Error("Could not load the PDF tool")); };
+      document.head.appendChild(s);
+    });
+  }
+  function hexRgb(h) {
+    var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(h || "");
+    if (!m) return [0, 0, 0];
+    return [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255];
+  }
+  function savePdfWithMarks(btn) {
+    btn.textContent = "Saving…";
+    Promise.all([
+      loadPdfLib(),
+      fetch(FILE).then(function (r) { return r.arrayBuffer(); })
+    ]).then(function (res) {
+      var L = window.PDFLib;
+      return L.PDFDocument.load(res[1], { ignoreEncryption: true }).then(function (doc) {
+        var pages = doc.getPages();
+        strokes.forEach(function (s) {
+          var pg = pages[s.g];
+          if (!pg) return;
+          var size = pg.getSize();
+          var k = size.width / 1000;
+          var c = hexRgb(s.c);
+          pg.drawSvgPath(pathD(s.p), {
+            x: 0,
+            y: size.height,
+            scale: k,
+            borderColor: L.rgb(c[0], c[1], c[2]),
+            borderWidth: s.w * k,
+            borderOpacity: s.a,
+            borderLineCap: L.LineCapStyle.Round
+          });
+        });
+        return doc.save();
+      });
+    }).then(function (bytes) {
+      var name = "notes";
+      try {
+        name = decodeURIComponent(FILE.split("?")[0].split("/").pop()).replace(/\.pdf$/i, "");
+      } catch (e) {}
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      a.download = name + "-annotated.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      btn.textContent = "Saved ✓";
+      setTimeout(function () { btn.textContent = "⬇ Save PDF"; }, 1800);
+    }).catch(function (err) {
+      btn.textContent = "Failed";
+      alert("Could not save: " + ((err && err.message) || err));
+      setTimeout(function () { btn.textContent = "⬇ Save PDF"; }, 1800);
+    });
+  }
+  var bPdf = mkBtn("⬇ Save PDF", function () { savePdfWithMarks(bPdf); }, "annB", rowAct);applyCorner();
   setState("closed");
   init();
 })();
