@@ -609,4 +609,40 @@ undo = function () {
 };
   applyCorner();
   setState("closed");
+var fp = {}, fwd = false;
+function fsend(type, id, x, y, pt) {
+  var vp = document.getElementById("vp");
+  if (!vp) return;
+  try {
+    vp.dispatchEvent(new PointerEvent(type, {
+      pointerId: id + 1000, pointerType: pt || "touch",
+      clientX: x, clientY: y, bubbles: true, cancelable: true
+    }));
+  } catch (_) {}
+}
+catcher.addEventListener("pointerdown", function (e) {
+  fp[e.pointerId] = { x: e.clientX, y: e.clientY };
+  var ids = Object.keys(fp);
+  if (ids.length < 2) return;
+  if (!fwd) {
+    fwd = true;
+    ids.forEach(function (id) {
+      if (+id !== e.pointerId) fsend("pointerdown", +id, fp[id].x, fp[id].y, e.pointerType);
+    });
+  }
+  fsend("pointerdown", e.pointerId, e.clientX, e.clientY, e.pointerType);
+});
+catcher.addEventListener("pointermove", function (e) {
+  if (!fp[e.pointerId]) return;
+  fp[e.pointerId] = { x: e.clientX, y: e.clientY };
+  if (fwd) fsend("pointermove", e.pointerId, e.clientX, e.clientY, e.pointerType);
+});
+function fend(e) {
+  if (!fp[e.pointerId]) return;
+  if (fwd) fsend(e.type, e.pointerId, e.clientX, e.clientY, e.pointerType);
+  delete fp[e.pointerId];
+  if (!Object.keys(fp).length) fwd = false;
+}
+catcher.addEventListener("pointerup", fend);
+catcher.addEventListener("pointercancel", fend);
 })();
