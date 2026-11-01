@@ -22,3 +22,11 @@ button.ghost{background:transparent;border:1px solid var(--line);width:auto;padd
 .progress{position:relative;height:22px;background:#0b1220;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-bottom:16px}
 .progress-bar{height:100%;width:0%;background:var(--blue);transition:width .15s}
 .progress span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.75rem}
+.mlist{display:grid;gap:10px}
+.mrow{display:flex;gap:10px;align-items:center;justify-content:space-between;background:#0b1220;border:1px solid var(--line);border-radius:12px;padding:12px}
+.minfo{display:grid;gap:4px;min-width:0}
+.minfo strong{overflow-wrap:anywhere}
+.minfo small{color:var(--muted)}
+.mactions{display:flex;gap:8px;flex-shrink:0}
+button.danger{border-color:var(--err);color:#fca5a5}
+@media (max-width:480px){.mrow{flex-direction:column;align-items:stretch}.mactions button{flex:1}}
