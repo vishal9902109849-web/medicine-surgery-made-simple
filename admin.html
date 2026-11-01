@@ -3,95 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin | Medicine & Surgery Made Simple by vishal</title>
-
-<style>
-body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:#0f172a;
-    color:white;
-}
-
-.container{
-    max-width:600px;
-    margin:40px auto;
-    padding:25px;
-    background:#1e293b;
-    border-radius:15px;
-}
-
-h1{
-    text-align:center;
-}
-
-input,select,textarea{
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    margin-bottom:18px;
-    border-radius:10px;
-    border:none;
-    font-size:16px;
-}
-
-button{
-    width:100%;
-    padding:15px;
-    background:#2563eb;
-    color:white;
-    border:none;
-    border-radius:10px;
-    font-size:18px;
-    cursor:pointer;
-}
-
-button:hover{
-    background:#1d4ed8;
-}
-</style>
-
+<meta name="robots" content="noindex">
+<title>Admin | Medicine & Surgery Made Simple by Vishal</title>
+<link rel="stylesheet" href="admin.css">
 </head>
-
 <body>
+<div class="wrap">
+  <h1>Medicine &amp; Surgery Made Simple</h1>
 
-<div class="container">
+  <section id="loginView" class="card">
+    <h2>Admin Login</h2>
+    <div id="loginMsg" class="msg" hidden></div>
+    <form id="loginForm">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button type="submit" id="loginBtn">Login</button>
+    </form>
+  </section>
 
-<h1>Medicine & Surgery Made Simple</h1>
-
-<h3>Admin Login</h3>
-
-<input id="email" type="email" placeholder="Admin Email">
-
-<input id="password" type="password" placeholder="Password">
-
-<button type="button" id="loginBtn">Login</button>
-
-<hr style="margin:30px 0;">
-
-<h3>Admin Upload Panel</h3>
-
-<input id="title" placeholder="Title">
-
-<textarea id="description" placeholder="Description"></textarea>
-
-<select id="subject">
-    <option>Medicine</option>
-    <option>Surgery</option>
-</select>
-
-<select id="type">
-    <option>Mind Maps</option>
-    <option>Notes</option>
-</select>
-
-<input type="file" id="file">
-
-<button type="button" id="uploadBtn">Publish Resource</button>
-
+  <section id="dashView" class="card" hidden>
+    <div class="bar">
+      <div><h2 style="margin:0">Dashboard</h2><small id="who"></small></div>
+      <button type="button" id="logoutBtn" class="ghost">Logout</button>
+    </div>
+    <p style="color:var(--muted)">Upload panel arrives in Step 2.</p>
+  </section>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="admin.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script type="module" src="admin.js"></script>
 </body>
 </html>
