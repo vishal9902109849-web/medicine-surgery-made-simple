@@ -303,6 +303,26 @@
   save();
   return true;
  }
+ var hist = [], pend = null;
+function makeSnap(list) {
+  return { t: "edit", items: list.map(function (s) {
+    return { s: s, p: s.p.map(function (pt) { return [pt[0], pt[1]]; }), c: s.c };
+  }) };
+}
+function undoHist(h) {
+  if (h.t === "draw") {
+    removeStroke(h.s);
+    strokes = strokes.filter(function (s) { return s !== h.s; });
+  } else {
+    h.items.forEach(function (it) {
+      it.s.p = it.p;
+      it.s.c = it.c;
+      it.s.el.setAttribute("d", pathD(it.s.p));
+      it.s.el.setAttribute("stroke", it.c);
+    });
+  }
+  save();
+}
   function undo() {
     var s = strokes.pop();
     if (s && s.el.parentNode) s.el.parentNode.removeChild(s.el);
@@ -547,6 +567,46 @@ var y1 = by, y2 = by + (+selBox.getAttribute("height") || 0);    sel = strokes.f
   catcher.addEventListener("pointerup", end);
   catcher.addEventListener("pointercancel", end);
 
+  strokes.forEach(function (s) { s._h = true; });
+
+var _selDown = selDown;
+selDown = function (q) {
+  _selDown(q);
+  pend = selMode === "move" ? makeSnap(sel) : null;
+};
+
+var _selUp = selUp;
+selUp = function (q) {
+  var wasMove = selMode === "move";
+  _selUp(q);
+  if (wasMove && pend) {
+    var a = pend.items[0];
+    if (a && (a.p[0][0] !== a.s.p[0][0] || a.p[0][1] !== a.s.p[0][1])) hist.push(pend);
+  }
+  pend = null;
+};
+
+var _recolorSel = recolorSel;
+recolorSel = function (c) {
+  if (sel.length) hist.push(makeSnap(sel));
+  return _recolorSel(c);
+};
+
+catcher.addEventListener("pointerup", function () {
+  var last = strokes[strokes.length - 1];
+  if (last && !last._h && tool !== "select" && tool !== "erase") {
+    last._h = true;
+    hist.push({ t: "draw", s: last });
+  }
+});
+
+undo = function () {
+  var h = hist.pop();
+  if (h) { undoHist(h); return; }
+  var s = strokes.pop();
+  if (s && s.el.parentNode) s.el.parentNode.removeChild(s.el);
+  save();
+};
   applyCorner();
   setState("closed");
 })();
