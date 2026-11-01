@@ -232,4 +232,244 @@
 
   var gTool = group("Tool", panel);
   var rowTool = el("div", "annRow", null, gTool);
-  var bPen = mkBtn("✏️ Pen", function () { tool = "pen"
+  var bPen = mkBtn("✏️ Pen", function () { tool = "pen"; refresh(); }, "annB", rowTool);
+  var bMarker = mkBtn("🖍 Marker", function () { tool = "marker"; refresh(); }, "annB", rowTool);
+  var bErase = mkBtn("🧽 Eraser", function () { tool = "erase"; refresh(); }, "annB", rowTool);
+
+  var gSize = group("Thickness", panel);
+  var rowSize = el("div", "annRow", null, gSize);
+  var sizeBtns = DOT.map(function (d, i) {
+    var b = el("button", "annB annSize", null, rowSize);
+    b.type = "button";
+    b.setAttribute("aria-label", SIZE_NAMES[i]);
+    var box = el("span", "annDotBox", null, b);
+    var dot = el("span", "annDot", null, box);
+    dot.style.width = d + "px";
+    dot.style.height = d + "px";
+    el("span", "annSizeTxt", SIZE_NAMES[i], b);
+    b.addEventListener("click", function () { sizeIdx = i; refresh(); });
+    b.dotEl = dot;
+    return b;
+  });
+
+  var gColor = group("Colour", panel);
+  var grid = el("div", "annSwGrid", null, gColor);
+  var swBtns = COLORS.map(function (c) {
+    var b = el("button", "annSwB", null, grid);
+    b.type = "button";
+    b.style.background = c;
+    b.setAttribute("aria-label", "Colour " + c);
+    b.addEventListener("click", function () {
+      color = c;
+      if (tool === "erase") tool = "pen";
+      refresh();
+    });
+    return b;
+  });
+  var custom = el("label", "annSwB annCustom", null, grid);
+  custom.setAttribute("aria-label", "Custom colour");
+  var picker = document.createElement("input");
+  picker.type = "color";
+  picker.value = "#2563eb";
+  custom.appendChild(picker);
+  picker.addEventListener("input", function () {
+    color = picker.value;
+    if (tool === "erase") tool = "pen";
+    refresh();
+  });
+
+  var gAct = group("Notes", panel);
+  var rowAct = el("div", "annRow", null, gAct);
+  mkBtn("↶ Undo", function () { undo(); }, "annB", rowAct);
+  mkBtn("Clear", function () { clearAll(); }, "annB", rowAct);
+  var bSave = mkBtn("Save", function () {
+    bSave.textContent = save() ? "Saved ✓" : "Can't save";
+    setTimeout(function () { bSave.textContent = "Save"; }, 1400);
+  }, "annB", rowAct);
+  var bHide = mkBtn("Hide notes", function () {
+    notesVisible = !notesVisible;
+    if (!notesVisible) drawMode = false;
+    refresh();
+  }, "annB", rowAct);
+
+  // ---------- actions ----------
+  function undo() {
+    var s = strokes.pop();
+    if (s && s.el.parentNode) s.el.parentNode.removeChild(s.el);
+    save();
+  }
+  function clearAll() {
+    if (!strokes.length) return;
+    if (!confirm("Clear all your notes on this mind map?")) return;
+    strokes.forEach(function (s) { if (s.el.parentNode) s.el.parentNode.removeChild(s.el); });
+    strokes = [];
+    save();
+  }
+  function setMode(draw) {
+    if (draw && !notesVisible) notesVisible = true;
+    drawMode = draw;
+    refresh();
+  }
+  function setState(s) {
+    state = s;
+    barOpen = s !== "closed";
+    fab.style.display = s === "closed" ? "" : "none";
+    dock.style.display = s === "collapsed" ? "flex" : "none";
+    panel.style.display = s === "open" ? "flex" : "none";
+    refresh();
+  }
+
+  function refresh() {
+    svg.style.display = notesVisible ? "" : "none";
+    bHide.textContent = notesVisible ? "Hide notes" : "Show notes";
+    bDraw.classList.toggle("on", drawMode);
+    bMove.classList.toggle("on", !drawMode);
+    bPen.classList.toggle("on", tool === "pen");
+    bMarker.classList.toggle("on", tool === "marker");
+    bErase.classList.toggle("on", tool === "erase");
+    sizeBtns.forEach(function (b, i) {
+      b.classList.toggle("on", i === sizeIdx && tool !== "erase");
+      b.style.opacity = tool === "erase" ? ".4" : "1";
+      b.dotEl.style.background = tool === "erase" ? "#94a3b8" : color;
+    });
+    swBtns.forEach(function (b, i) {
+      b.classList.toggle("on", tool !== "erase" && COLORS[i] === color);
+    });
+    custom.classList.toggle("on", tool !== "erase" && COLORS.indexOf(color) < 0);
+    dMode.textContent = drawMode ? "✎ Draw" : "✋ Move";
+    dMode.classList.toggle("on", drawMode);
+    dDot.style.background = tool === "erase" ? "#94a3b8" : color;
+    fab.style.borderColor = color;
+    catcher.style.display = barOpen && drawMode && notesVisible ? "block" : "none";
+  }
+
+  // ---------- placing the toolbox in a corner ----------
+  function applyCorner() {
+    ui.style.left = "auto";
+    ui.style.right = "auto";
+    ui.style.top = "auto";
+    ui.style.bottom = "auto";
+    var v = corner.charAt(0) === "t" ? "top" : "bottom";
+    var h = corner.charAt(1) === "l" ? "left" : "right";
+    ui.style[v] = "calc(10px + env(safe-area-inset-" + v + ",0px))";
+    ui.style[h] = "calc(10px + env(safe-area-inset-" + h + ",0px))";
+  }
+
+  // Drag the handle to move; it snaps to the nearest corner. A quick tap jumps to the next corner.
+  function attachDrag(handle) {
+    var dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    handle.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      dragging = true;
+      moved = false;
+      var r = ui.getBoundingClientRect();
+      sx = e.clientX; sy = e.clientY; ox = r.left; oy = r.top;
+      try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    handle.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!moved && Math.hypot(dx, dy) > 6) {
+        moved = true;
+        ui.style.right = "auto";
+        ui.style.bottom = "auto";
+        ui.classList.add("drag");
+      }
+      if (moved) {
+        ui.style.left = ox + dx + "px";
+        ui.style.top = oy + dy + "px";
+      }
+    });
+    function up() {
+      if (!dragging) return;
+      dragging = false;
+      ui.classList.remove("drag");
+      if (moved) {
+        var r = ui.getBoundingClientRect();
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        corner = (cy < innerHeight / 2 ? "t" : "b") + (cx < innerWidth / 2 ? "l" : "r");
+      } else {
+        corner = CORNERS[(CORNERS.indexOf(corner) + 1) % 4];
+      }
+      saveUI();
+      applyCorner();
+    }
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
+  }
+  attachDrag(grip);
+  attachDrag(gripD);
+
+  // ---------- drawing ----------
+  function removeStroke(s) {
+    if (s.el.parentNode) s.el.parentNode.removeChild(s.el);
+  }
+
+  function eraseAt(q) {
+    var R = 14 / scaleNow();
+    var keep = [];
+    var changed = false;
+    strokes.forEach(function (s) {
+      var hit = s.p.some(function (pt) {
+        return Math.hypot(pt[0] - q[0], pt[1] - q[1]) < R;
+      });
+      if (hit) { removeStroke(s); changed = true; } else keep.push(s);
+    });
+    if (changed) strokes = keep;
+  }
+
+  function cancelCurrent() {
+    if (cur) {
+      removeStroke(cur);
+      strokes = strokes.filter(function (s) { return s !== cur; });
+    }
+    cur = null;
+    erasing = false;
+  }
+
+  catcher.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    nActive++;
+    if (nActive > 1) { cancelCurrent(); return; }
+    try { catcher.setPointerCapture(e.pointerId); } catch (_) {}
+    var q = toLocal(e);
+    if (!q) return;
+    if (tool === "erase") { erasing = true; eraseAt(q); return; }
+    var px = SIZES[tool][sizeIdx];
+    cur = {
+      c: color,
+      w: Math.round((px / scaleNow()) * 100) / 100,
+      a: tool === "marker" ? 0.35 : 1,
+      p: [q]
+    };
+    cur.el = makePath(cur);
+    svg.appendChild(cur.el);
+    strokes.push(cur);
+  });
+
+  catcher.addEventListener("pointermove", function (e) {
+    if (nActive !== 1) return;
+    var q = toLocal(e);
+    if (!q) return;
+    if (erasing) { eraseAt(q); return; }
+    if (!cur) return;
+    var last = cur.p[cur.p.length - 1];
+    if (Math.hypot(q[0] - last[0], q[1] - last[1]) < 0.6 / scaleNow()) return;
+    cur.p.push(q);
+    cur.el.setAttribute("d", pathD(cur.p));
+  });
+
+  function end() {
+    nActive = Math.max(0, nActive - 1);
+    if (nActive === 0 && (cur || erasing)) {
+      cur = null;
+      erasing = false;
+      save();
+    }
+  }
+  catcher.addEventListener("pointerup", end);
+  catcher.addEventListener("pointercancel", end);
+
+  applyCorner();
+  setState("closed");
+})();
