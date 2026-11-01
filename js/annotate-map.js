@@ -428,7 +428,70 @@
     cur = null;
     erasing = false;
   }
-
+var sel = [], selBox = null, selMode = null, selLast = null;
+function strokeHit(s, q, R) {
+  return s.p.some(function (pt) { return Math.hypot(pt[0] - q[0], pt[1] - q[1]) < R; });
+}
+function paintSel() {
+  strokes.forEach(function (s) {
+    s.el.style.filter = sel.indexOf(s) >= 0 ? "drop-shadow(0 0 3px #2563eb)" : "";
+  });
+}
+function selDown(q) {
+  var R = 22 / scaleNow();
+  var hit = null;
+  for (var i = strokes.length - 1; i >= 0; i--) {
+    if (strokeHit(strokes[i], q, R)) { hit = strokes[i]; break; }
+  }
+  if (hit) {
+    if (sel.indexOf(hit) < 0) sel = [hit];
+    selMode = "move";
+    selLast = q;
+  } else {
+    sel = [];
+    selMode = "box";
+    selLast = q;
+    selBox = document.createElementNS(NS, "rect");
+    selBox.setAttribute("fill", "rgba(37,99,235,.12)");
+    selBox.setAttribute("stroke", "#2563eb");
+    selBox.setAttribute("stroke-width", 1 / scaleNow());
+    selBox.setAttribute("stroke-dasharray", 4 / scaleNow());
+    svg.appendChild(selBox);
+  }
+  paintSel();
+}
+function selMove(q) {
+  if (selMode === "move") {
+    var dx = q[0] - selLast[0], dy = q[1] - selLast[1];
+    sel.forEach(function (s) {
+      s.p = s.p.map(function (pt) { return [pt[0] + dx, pt[1] + dy]; });
+      s.el.setAttribute("d", pathD(s.p));
+    });
+    selLast = q;
+  } else if (selMode === "box") {
+    var x = Math.min(selLast[0], q[0]), y = Math.min(selLast[1], q[1]);
+    selBox.setAttribute("x", x);
+    selBox.setAttribute("y", y);
+    selBox.setAttribute("width", Math.abs(q[0] - selLast[0]));
+    selBox.setAttribute("height", Math.abs(q[1] - selLast[1]));
+  }
+}
+function selUp(q) {
+  if (selMode === "box" && selBox) {
+    var x1 = Math.min(selLast[0], q[0]), x2 = Math.max(selLast[0], q[0]);
+    var y1 = Math.min(selLast[1], q[1]), y2 = Math.max(selLast[1], q[1]);
+    sel = strokes.filter(function (s) {
+      return s.p.some(function (pt) {
+        return pt[0] >= x1 && pt[0] <= x2 && pt[1] >= y1 && pt[1] <= y2;
+      });
+    });
+    svg.removeChild(selBox);
+    selBox = null;
+    paintSel();
+  }
+  if (selMode === "move") save();
+  selMode = null;
+}
   catcher.addEventListener("pointerdown", function (e) {
     e.preventDefault();
     nActive++;
@@ -437,6 +500,7 @@
     var q = toLocal(e);
     if (!q) return;
     if (tool === "erase") { erasing = true; eraseAt(q); return; }
+    if (tool === "select") { selDown(q); return; }
     var px = SIZES[tool][sizeIdx];
     cur = {
       c: color,
@@ -454,6 +518,7 @@
     var q = toLocal(e);
     if (!q) return;
     if (erasing) { eraseAt(q); return; }
+    if (tool === "select") { selMove(q); return; }
     if (!cur) return;
     var last = cur.p[cur.p.length - 1];
     if (Math.hypot(q[0] - last[0], q[1] - last[1]) < 0.6 / scaleNow()) return;
@@ -462,6 +527,7 @@
   });
 
   function end() {
+    if (tool === "select" && selMode) { selUp(selLast); nActive = 0; return; }
     nActive = Math.max(0, nActive - 1);
     if (nActive === 0 && (cur || erasing)) {
       cur = null;
