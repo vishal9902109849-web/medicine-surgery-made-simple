@@ -879,4 +879,27 @@ sbar.addEventListener("pointerup", function () { sbDrag = false; });
 sbar.addEventListener("pointercancel", function () { sbDrag = false; });
 var _apply3 = apply;
 apply = function () { _apply3(); updBar(); };
+var waitT = null, waitE = null;
+var _ssWait = startStroke;
+startStroke = function (e) {
+  if (tool === "select") { _ssWait(e); return; }
+  mode = "wait";
+  waitE = { clientX: e.clientX, clientY: e.clientY };
+  waitT = setTimeout(function () {
+    waitT = null;
+    if (Object.keys(ptrs).length === 1) _ssWait(waitE);
+  }, 100);
+};
+catcher.addEventListener("pointerdown", function () {
+  if (waitT && Object.keys(ptrs).length >= 2) { clearTimeout(waitT); waitT = null; }
+});
+catcher.addEventListener("pointerup", function () {
+  if (waitT) {
+    clearTimeout(waitT);
+    waitT = null;
+    _ssWait(waitE);
+    cur = null;
+    save();
+  }
+});
 })();
