@@ -12,6 +12,8 @@ const TYPES = {
   gif: "image/gif",
 };
 
+const INJECT = '<script src="/js/annotate-map.js"></script>';
+
 module.exports = async (req, res) => {
   const raw = req.query.path || "";
   let path = Array.isArray(raw) ? raw.join("/") : raw;
@@ -34,7 +36,15 @@ module.exports = async (req, res) => {
       res.status(upstream.status === 404 ? 404 : 502).send("File not found");
       return;
     }
-    const body = Buffer.from(await upstream.arrayBuffer());
+    let body = Buffer.from(await upstream.arrayBuffer());
+
+    if (ext === "html" || ext === "htm") {
+      let html = body.toString("utf8");
+      const i = html.lastIndexOf("</body>");
+      html = i >= 0 ? html.slice(0, i) + INJECT + html.slice(i) : html + INJECT;
+      body = Buffer.from(html, "utf8");
+    }
+
     res.setHeader("Content-Type", TYPES[ext]);
     res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
     res.status(200).send(body);
