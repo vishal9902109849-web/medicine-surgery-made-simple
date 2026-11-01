@@ -487,9 +487,9 @@ function selMove(q) {
 }
 function selUp(q) {
   if (selMode === "box" && selBox) {
-    var x1 = Math.min(selLast[0], q[0]), x2 = Math.max(selLast[0], q[0]);
-    var y1 = Math.min(selLast[1], q[1]), y2 = Math.max(selLast[1], q[1]);
-    sel = strokes.filter(function (s) {
+var bx = +selBox.getAttribute("x") || 0, by = +selBox.getAttribute("y") || 0;
+var x1 = bx, x2 = bx + (+selBox.getAttribute("width") || 0);
+var y1 = by, y2 = by + (+selBox.getAttribute("height") || 0);    sel = strokes.filter(function (s) {
       return s.p.some(function (pt) {
         return pt[0] >= x1 && pt[0] <= x2 && pt[1] >= y1 && pt[1] <= y2;
       });
