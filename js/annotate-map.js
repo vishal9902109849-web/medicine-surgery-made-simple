@@ -470,7 +470,6 @@ function selDown(q) {
   paintSel();
 }
 function selMove(q) {
-bSave.textContent = "sel " + sel.length;
   if (selMode === "move") {
     var dx = q[0] - selLast[0], dy = q[1] - selLast[1];
     sel.forEach(function (s) {
