@@ -671,7 +671,175 @@
       setTimeout(function () { btn.textContent = "⬇ Save PDF"; }, 1800);
     });
   }
-  var bPdf = mkBtn("⬇ Save PDF", function () { savePdfWithMarks(bPdf); }, "annB", rowAct);applyCorner();
+  var bPdf = mkBtn("⬇ Save PDF", function () { savePdfWithMarks(bPdf); }, "annB", rowAct);  // ---------- select tool: pick strokes, move, recolour ----------
+  var sel = [];
+  var selAct = null, selG = 0, selLast = null, selStart0 = null;
+  var selBox = null, marq = null;
+
+  function r1(n) { return Math.round(n * 10) / 10; }
+  function distSeg(px, py, a, b) {
+    var dx = b[0] - a[0], dy = b[1] - a[1];
+    var l = dx * dx + dy * dy;
+    var t = l ? ((px - a[0]) * dx + (py - a[1]) * dy) / l : 0;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - a[0] - t * dx, py - a[1] - t * dy);
+  }
+  function strokeAt(q, g) {
+    var R = 18 / view.k;
+    for (var i = strokes.length - 1; i >= 0; i--) {
+      var s = strokes[i];
+      if (s.g !== g) continue;
+      var p = s.p;
+      if (p.length === 1) {
+        if (Math.hypot(q[0] - p[0][0], q[1] - p[0][1]) < R + s.w / 2) return s;
+        continue;
+      }
+      for (var j = 1; j < p.length; j++) {
+        if (distSeg(q[0], q[1], p[j - 1], p[j]) < R + s.w / 2) return s;
+      }
+    }
+    return null;
+  }
+  function hideBox() {
+    if (selBox && selBox.parentNode) selBox.parentNode.removeChild(selBox);
+    selBox = null;
+  }
+  function dropMarq() {
+    if (marq && marq.parentNode) marq.parentNode.removeChild(marq);
+    marq = null;
+  }
+  function clearSel() { sel = []; hideBox(); }
+  function mkRect(g) {
+    var r = document.createElementNS(NS, "rect");
+    var u = 1 / view.k;
+    r.setAttribute("fill", "rgba(59,130,246,0.08)");
+    r.setAttribute("stroke", "#3b82f6");
+    r.setAttribute("stroke-width", 2 * u);
+    r.setAttribute("stroke-dasharray", 8 * u + " " + 5 * u);
+    infos[g].svg.appendChild(r);
+    return r;
+  }
+  function showSel() {
+    hideBox();
+    sel = sel.filter(function (s) { return strokes.indexOf(s) >= 0; });
+    if (!sel.length) return;
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    sel.forEach(function (s) {
+      var pad = s.w / 2;
+      s.p.forEach(function (pt) {
+        x0 = Math.min(x0, pt[0] - pad);
+        y0 = Math.min(y0, pt[1] - pad);
+        x1 = Math.max(x1, pt[0] + pad);
+        y1 = Math.max(y1, pt[1] + pad);
+      });
+    });
+    var m = 6 / view.k;
+    selBox = mkRect(sel[0].g);
+    selBox.setAttribute("x", x0 - m);
+    selBox.setAttribute("y", y0 - m);
+    selBox.setAttribute("width", x1 - x0 + 2 * m);
+    selBox.setAttribute("height", y1 - y0 + 2 * m);
+  }
+  function recolor(c) {
+    if (tool !== "select" || !sel.length) return;
+    sel.forEach(function (s) {
+      s.c = c;
+      s.el.setAttribute("stroke", c);
+    });
+    save();
+  }
+
+  var bSel = mkBtn("⬚ Select", function () { tool = "select"; refresh(); }, "annB", rowTool);
+
+  var _refresh = refresh;
+  refresh = function () {
+    _refresh();
+    bSel.classList.toggle("on", tool === "select");
+    if (tool !== "select" && sel.length) clearSel();
+  };
+  var _apply2 = apply;
+  apply = function () {
+    _apply2();
+    if (sel.length) showSel();
+  };
+
+  swBtns.forEach(function (b) {
+    b.addEventListener("click", function () { recolor(color); });
+  });
+  picker.addEventListener("input", function () { recolor(color); });
+
+  var _startStroke = startStroke;
+  startStroke = function (e) {
+    if (tool !== "select") { _startStroke(e); return; }
+    mode = "sel";
+    var g = pageAt((e.clientY - view.y) / view.k);
+    if (g < 0) { selAct = null; return; }
+    var q = pagePt(e, g);
+    var hit = strokeAt(q, g);
+    selG = g;
+    selLast = q;
+    if (hit) {
+      if (sel.indexOf(hit) < 0) sel = [hit];
+      selAct = "move";
+      showSel();
+    } else {
+      clearSel();
+      selAct = "marquee";
+      selStart0 = q;
+      marq = mkRect(g);
+    }
+  };
+
+  catcher.addEventListener("pointerdown", function () {
+    if (selAct && Object.keys(ptrs).length >= 2) {
+      if (selAct === "move") save();
+      selAct = null;
+      dropMarq();
+    }
+  });
+
+  catcher.addEventListener("pointermove", function (e) {
+    if (!selAct || !ptrs[e.pointerId]) return;
+    var q = pagePt(e, selG);
+    if (selAct === "move") {
+      var dx = q[0] - selLast[0], dy = q[1] - selLast[1];
+      sel.forEach(function (s) {
+        s.p = s.p.map(function (pt) { return [r1(pt[0] + dx), r1(pt[1] + dy)]; });
+        s.el.setAttribute("d", pathD(s.p));
+      });
+      selLast = q;
+      showSel();
+    } else if (marq) {
+      marq.setAttribute("x", Math.min(q[0], selStart0[0]));
+      marq.setAttribute("y", Math.min(q[1], selStart0[1]));
+      marq.setAttribute("width", Math.abs(q[0] - selStart0[0]));
+      marq.setAttribute("height", Math.abs(q[1] - selStart0[1]));
+    }
+  });
+
+  function selEnd() {
+    if (!selAct || Object.keys(ptrs).length) return;
+    if (selAct === "move") {
+      save();
+    } else if (marq) {
+      var x = +marq.getAttribute("x"), y = +marq.getAttribute("y");
+      var w = +marq.getAttribute("width"), h = +marq.getAttribute("height");
+      dropMarq();
+      if (w < 3 / view.k && h < 3 / view.k) {
+        sel = [];
+      } else {
+        sel = strokes.filter(function (s) {
+          return s.g === selG && s.p.some(function (pt) {
+            return pt[0] >= x && pt[0] <= x + w && pt[1] >= y && pt[1] <= y + h;
+          });
+        });
+      }
+      showSel();
+    }
+    selAct = null;
+  }
+  catcher.addEventListener("pointerup", selEnd);
+  catcher.addEventListener("pointercancel", selEnd);applyCorner();
   setState("closed");
   init();
 })();
