@@ -260,7 +260,9 @@ async function renderResources(){
    const p=document.createElement("p");
    p.textContent=r.subject+" · "+r.resource_type+" · "+(r.description||"");
    const a=document.createElement("a");
-   a.href=db.storage.from("medical-resources").getPublicUrl(r.file_path).data.publicUrl;
+   a.href = r.file_path.startsWith("http")
+    ? r.file_path
+    : "./" + r.file_path;
    a.target="_blank";
    a.rel="noopener noreferrer";
    a.textContent=r.file_name.toLowerCase().endsWith(".html")||r.file_name.toLowerCase().endsWith(".htm")?"Open Mind Map ↗":"View / Download PDF ↗";
