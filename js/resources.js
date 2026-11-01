@@ -11,14 +11,11 @@ const isImage = (e) => ["png", "jpg", "jpeg", "webp", "gif"].includes(e);
 const isHtml = (e) => e === "html" || e === "htm";
 const shareUrl = (r) => location.origin + location.pathname + "#" + r.id;
 
-// Added to every mind map so taps on links can be handled by this page.
-const BRIDGE =
-  "<script>document.addEventListener('click',function(e){" +
-  "var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;" +
-  "var h=a.getAttribute('href');" +
-  "if(!h||h.charAt(0)==='#'||/^(javascript|mailto|tel):/i.test(h))return;" +
-  "e.preventDefault();parent.postMessage({mindmapLink:h},'*');},true);" +
-  "<\/script>";
+// Added to every mind map: the drawing layer, saved under the file's path.
+const annScript = (path) =>
+  "<script>window.__ANN_KEY=" +
+  JSON.stringify("ann2:" + path).replace(/</g, "\\u003c") +
+  ";<\/script><script src=\"/js/annotate-map.js\"><\/script>";
 
 async function load() {
   const { data, error } = await db
@@ -137,8 +134,9 @@ async function open(r) {
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error("HTTP " + res.status);
-    $("frame").srcdoc = (await res.text()) + BRIDGE;
-  } catch (err) {
+        $("frame").srcdoc = (await res.text()) + annScript(r.file_path);
+  } catch (err) 
+  {
     $("frame").srcdoc =
       "<p style='font-family:sans-serif;padding:20px'>Could not load this file.</p>";
   }
