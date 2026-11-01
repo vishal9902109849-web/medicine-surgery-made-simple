@@ -632,8 +632,7 @@ function backUp(e) {
   if (!autoMove || Object.keys(down).length) return;
   clearTimeout(backT);
   backT = setTimeout(function () {
-    if (autoMove && !Object.keys(down).length) { autoMove = false; setMode(true); }
-  }, 300);
+    if (autoMove && !Object.keys(down).length) { autoMove = false; setMode(true); }bErase800);
 }
 document.addEventListener("pointerup", backUp, true);
 document.addEventListener("pointercancel", backUp, true);
