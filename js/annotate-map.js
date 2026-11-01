@@ -328,6 +328,7 @@
     bPen.classList.toggle("on", tool === "pen");
     bMarker.classList.toggle("on", tool === "marker");
     bErase.classList.toggle("on", tool === "erase");
+    bSel.classList.toggle("on", tool === "select");
     sizeBtns.forEach(function (b, i) {
       b.classList.toggle("on", i === sizeIdx && tool !== "erase");
       b.style.opacity = tool === "erase" ? ".4" : "1";
