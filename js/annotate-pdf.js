@@ -584,7 +584,32 @@
     });
   }
 
-  applyCorner();
+    // ---------- page indicator + jump ----------
+  var pgBtn = document.createElement("button");
+  pgBtn.type = "button";
+  pgBtn.style.cssText =
+    "position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;" +
+    "transform:translateX(-50%);z-index:99999;padding:7px 14px;border-radius:999px;" +
+    "border:1px solid rgba(255,255,255,.14);background:rgba(15,23,42,.93);" +
+    "color:#e2e8f0;font:600 13px system-ui,sans-serif;display:none";
+  document.body.appendChild(pgBtn);
+  function curPage() {
+    return Math.max(0, pageAt((innerHeight / 2 - view.y) / view.k));
+  }
+  function updPg() {
+    if (!infos.length) return;
+    pgBtn.style.display = "block";
+    pgBtn.textContent = "Page " + (curPage() + 1) + " / " + infos.length;
+  }
+  var _apply = apply;
+  apply = function () { _apply(); updPg(); };
+  pgBtn.addEventListener("click", function () {
+    var n = parseInt(prompt("Go to page (1-" + infos.length + ")", curPage() + 1), 10);
+    if (!n) return;
+    n = Math.min(infos.length, Math.max(1, n));
+    view.y = 10 - infos[n - 1].div.offsetTop * view.k;
+    apply();
+  });applyCorner();
   setState("closed");
   init();
 })();
