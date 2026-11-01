@@ -1,9 +1,6 @@
 {
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/resources.html",
-      "permanent": false
-    }
+  "rewrites": [
+    { "source": "/surgery/:path*", "destination": "/api/file?path=surgery/:path*" },
+    { "source": "/medicine/:path*", "destination": "/api/file?path=medicine/:path*" }
   ]
 }
