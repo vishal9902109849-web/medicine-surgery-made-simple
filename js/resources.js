@@ -120,7 +120,14 @@ async function copyLink(r, btn) {
 async function open(r) {
   const ext = extOf(r.file_path);
   const url = urlFor(r.file_path);
-
+if (ext === "pdf") {
+    window.open(
+      "/pdf.html?file=" + encodeURIComponent(url),
+      "_blank",
+      "noopener"
+    );
+    return;
+}
   if (!isHtml(ext)) {
     window.open(url, "_blank", "noopener");
     return;
