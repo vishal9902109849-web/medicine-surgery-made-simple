@@ -24,7 +24,7 @@
     }, true);
   }
 
-  var stage = document.getElementById("stage");
+    var stage = document.getElementById("stage") || document.getElementById("world");
   var useBody = !stage;
   var host = stage || document.body;
 
