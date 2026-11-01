@@ -3,9 +3,15 @@
   window.__annLoaded = true;
 
   var NS = "http://www.w3.org/2000/svg";
-  var COLORS = ["#ef4444", "#2563eb", "#16a34a", "#111827", "#f59e0b"];
+  var COLORS = [
+    "#ef4444", "#f97316", "#f59e0b", "#facc15", "#84cc16",
+    "#16a34a", "#14b8a6", "#38bdf8", "#2563eb", "#8b5cf6",
+    "#ec4899", "#92400e", "#111827", "#ffffff"
+  ];
   var SIZES = { pen: [1.5, 3, 6], marker: [10, 18, 30] };
-  var LABELS = ["Thin", "Medium", "Thick"];
+  var SIZE_NAMES = ["Thin", "Medium", "Thick"];
+  var DOT = [5, 9, 14];
+  var CORNERS = ["tl", "tr", "br", "bl"];
   var inFrame = window.parent !== window;
 
   function safeDecode(s) { try { return decodeURIComponent(s); } catch (e) { return s; } }
@@ -24,17 +30,18 @@
     }, true);
   }
 
-    var stage = document.getElementById("stage") || document.getElementById("world");
+  var stage = document.getElementById("stage") || document.getElementById("world");
   var useBody = !stage;
   var host = stage || document.body;
 
-  // The drawing layer lives INSIDE the stage, so it zooms and pans with the map.
+  // The drawing layer lives INSIDE the zooming layer, so it zooms and pans with the map.
   var svg = document.createElementNS(NS, "svg");
   svg.id = "annSvg";
   svg.style.cssText =
     "position:absolute;left:0;top:0;overflow:visible;pointer-events:none;z-index:50;" +
     (useBody ? "" : "width:100%;height:100%;");
   host.appendChild(svg);
+
   if (!useBody && (host.offsetWidth < 2 || host.offsetHeight < 2)) {
     svg.style.width = "1px";
     svg.style.height = "1px";
@@ -59,6 +66,8 @@
   var drawMode = true;
   var barOpen = false;
   var notesVisible = true;
+  var state = "closed";
+  var corner = "tl";
   var cur = null;
   var erasing = false;
   var nActive = 0;
@@ -99,6 +108,17 @@
     } catch (e) { return false; }
   }
 
+  function loadUI() {
+    try {
+      var u = JSON.parse(localStorage.getItem("annUI"));
+      if (u && CORNERS.indexOf(u.corner) >= 0) corner = u.corner;
+    } catch (e) {}
+  }
+  function saveUI() {
+    try { localStorage.setItem("annUI", JSON.stringify({ corner: corner })); } catch (e) {}
+  }
+  loadUI();
+
   strokes = load().map(function (s) {
     s.el = makePath(s);
     svg.appendChild(s.el);
@@ -120,199 +140,96 @@
     return [Math.round(q.x * 10) / 10, Math.round(q.y * 10) / 10];
   }
 
-  // ---------- UI ----------
+  // ---------- styles ----------
   var css = document.createElement("style");
-  css.textContent =
-    "#annCatch{position:fixed;inset:0;z-index:99998;touch-action:none;display:none;cursor:crosshair}" +
-        "#annFab{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:99999;width:46px;height:46px;border-radius:50%;border:0;background:#2563eb;color:#fff;font-size:22px;box-shadow:0 4px 14px #0006}" +
-    "#annBar{position:fixed;left:8px;right:8px;top:calc(8px + env(safe-area-inset-top,0px));z-index:99999;display:none;flex-direction:column;gap:6px;background:#1e293bf2;border:1px solid #334155;border-radius:14px;padding:8px;font-family:system-ui,Arial,sans-serif}" +
-    ".annRow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}" +
-    ".annB{padding:7px 10px;font-size:13px;border-radius:9px;border:1px solid #475569;background:#0b1220;color:#f1f5f9}" +
-    ".annB.on{background:#2563eb;border-color:#2563eb}" +
-    ".annSw{width:28px;height:28px;padding:0;border-radius:50%;border:2px solid #ffffff55}" +
-    ".annSw.on{border-color:#fff;box-shadow:0 0 0 2px #2563eb}";
+  css.textContent = `
+    #annCatch{position:fixed;inset:0;z-index:99998;touch-action:none;display:none;cursor:crosshair}
+    #annUI{position:fixed;z-index:99999;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#e2e8f0;-webkit-user-select:none;user-select:none}
+    #annUI.drag{opacity:.9}
+    #annUI button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    #annFab{width:52px;height:52px;border-radius:50%;border:3px solid #2563eb;background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;font-size:22px;padding:0;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+    #annDock,#annPanel{background:rgba(15,23,42,.93);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+    #annDock{display:none;align-items:center;gap:4px;padding:5px;border-radius:999px}
+    #annPanel{display:none;flex-direction:column;gap:10px;width:min(88vw,330px);max-height:calc(100vh - 28px);overflow:auto;border-radius:20px;padding:10px}
+    .annHead{display:flex;align-items:center;gap:6px}
+    .annGrip{flex:1;text-align:left;background:transparent;border:0;padding:6px 4px;font-size:14px;font-weight:600;letter-spacing:.02em;touch-action:none;cursor:grab}
+    .annGrip.small{flex:none;width:30px;text-align:center;padding:6px 0;font-size:16px}
+    .annIcon{width:34px;height:34px;border-radius:50%;padding:0;font-size:15px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}
+    .annLbl{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:#94a3b8;margin:0 0 5px 2px}
+    .annRow{display:flex;gap:6px;flex-wrap:wrap}
+    .annB{flex:1;padding:9px 10px;font-size:13px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);white-space:nowrap;transition:background .15s,border-color .15s}
+    .annB.on,.annIcon.on{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:#60a5fa;color:#fff}
+    .annSize{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px 6px}
+    .annDotBox{height:16px;display:flex;align-items:center;justify-content:center}
+    .annDot{display:block;border-radius:50%;background:#fff}
+    .annSizeTxt{font-size:10px;color:#cbd5e1}
+    .annSwGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;padding:2px}
+    .annSwB{position:relative;display:block;width:100%;aspect-ratio:1;border-radius:50%;padding:0;border:2px solid rgba(255,255,255,.35);transition:transform .12s}
+    .annSwB.on{border-color:#fff;box-shadow:0 0 0 3px #3b82f6;transform:scale(1.06)}
+    .annCustom{background:conic-gradient(#ef4444,#facc15,#22c55e,#38bdf8,#8b5cf6,#ec4899,#ef4444);overflow:hidden}
+    .annCustom input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+    .annDockDot{display:block;width:18px;height:18px;margin:auto;border-radius:50%;border:2px solid #fff}
+  `;
   document.head.appendChild(css);
 
-  var catcher = document.createElement("div");
-  catcher.id = "annCatch";
-  document.body.appendChild(catcher);
-
-  function btn(label, onClick, cls) {
-    var b = document.createElement("button");
+  // ---------- element helpers ----------
+  function el(tag, cls, text, parent) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function mkBtn(label, onClick, cls, parent, aria) {
+    var b = el("button", cls || "annB", label, parent);
     b.type = "button";
-    b.className = "annB " + (cls || "");
-    b.textContent = label;
+    if (aria) b.setAttribute("aria-label", aria);
     b.addEventListener("click", onClick);
     return b;
   }
+  function group(label, parent) {
+    var g = el("div", "annGroup", null, parent);
+    el("div", "annLbl", label, g);
+    return g;
+  }
 
-  var fab = btn("✎", function () { openBar(true); });
+  var catcher = el("div", "", null, document.body);
+  catcher.id = "annCatch";
+
+  var ui = el("div", "", null, document.body);
+  ui.id = "annUI";
+
+  // ---------- closed: round button ----------
+  var fab = mkBtn("✎", function () { drawMode = true; setState("open"); }, "", ui, "Annotate");
   fab.id = "annFab";
-  fab.className = "";
-  fab.setAttribute("aria-label", "Annotate");
-  document.body.appendChild(fab);
 
-  var bar = document.createElement("div");
-  bar.id = "annBar";
-  document.body.appendChild(bar);
+  // ---------- shrunk: small pill ----------
+  var dock = el("div", "", null, ui);
+  dock.id = "annDock";
+  var gripD = mkBtn("⠿", function () {}, "annGrip small", dock, "Drag to move");
+  var dMode = mkBtn("✎", function () { setMode(!drawMode); }, "annIcon", dock, "Draw or move");
+  dMode.style.width = "auto";
+  dMode.style.padding = "0 12px";
+  var dUndo = mkBtn("↶", function () { undo(); }, "annIcon", dock, "Undo");
+  var dColor = mkBtn("", function () { setState("open"); }, "annIcon", dock, "Colour");
+  var dDot = el("span", "annDockDot", null, dColor);
+  var dExpand = mkBtn("▴", function () { setState("open"); }, "annIcon", dock, "Expand");
+  var dClose = mkBtn("✕", function () { setState("closed"); }, "annIcon", dock, "Close");
 
-  var r1 = document.createElement("div"); r1.className = "annRow";
-  var r2 = document.createElement("div"); r2.className = "annRow";
-  var r3 = document.createElement("div"); r3.className = "annRow";
-  bar.append(r1, r2, r3);
+  // ---------- open: full panel ----------
+  var panel = el("div", "", null, ui);
+  panel.id = "annPanel";
 
-  var bDraw = btn("Draw", function () { setMode(true); });
-  var bMove = btn("Move / Zoom", function () { setMode(false); });
-  var bPen = btn("Pen", function () { tool = "pen"; refresh(); });
-  var bMarker = btn("Marker", function () { tool = "marker"; refresh(); });
-  var bErase = btn("Eraser", function () { tool = "erase"; refresh(); });
-  r1.append(bDraw, bMove, bPen, bMarker, bErase);
+  var head = el("div", "annHead", null, panel);
+  var grip = mkBtn("⠿  Notes", function () {}, "annGrip", head, "Drag to move");
+  mkBtn("▾", function () { setState("collapsed"); }, "annIcon", head, "Shrink");
+  mkBtn("✕", function () { setState("closed"); }, "annIcon", head, "Close");
 
-  var sizeBtns = LABELS.map(function (l, i) {
-    var b = btn(l, function () { sizeIdx = i; refresh(); });
-    r2.appendChild(b);
-    return b;
-  });
-  var swBtns = COLORS.map(function (c) {
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "annSw";
-    b.style.background = c;
-    b.setAttribute("aria-label", "Colour");
-    b.addEventListener("click", function () {
-      color = c;
-      if (tool === "erase") tool = "pen";
-      refresh();
-    });
-    r2.appendChild(b);
-    return b;
-  });
+  var gMode = group("Mode", panel);
+  var rowMode = el("div", "annRow", null, gMode);
+  var bDraw = mkBtn("✎ Draw", function () { setMode(true); }, "annB", rowMode);
+  var bMove = mkBtn("✋ Move / Zoom", function () { setMode(false); }, "annB", rowMode);
 
-  var bUndo = btn("Undo", function () {
-    var s = strokes.pop();
-    if (s && s.el.parentNode) s.el.parentNode.removeChild(s.el);
-    save();
-  });
-  var bClear = btn("Clear", function () {
-    if (!strokes.length) return;
-    if (!confirm("Clear all your notes on this mind map?")) return;
-    strokes.forEach(function (s) { if (s.el.parentNode) s.el.parentNode.removeChild(s.el); });
-    strokes = [];
-    save();
-  });
-  var bSave = btn("Save", function () {
-    bSave.textContent = save() ? "Saved ✓" : "Can't save";
-    setTimeout(function () { bSave.textContent = "Save"; }, 1400);
-  });
-  var bHide = btn("Hide notes", function () {
-    notesVisible = !notesVisible;
-    if (!notesVisible) drawMode = false;
-    refresh();
-  });
-  var bClose = btn("✕", function () { openBar(false); });
-  r3.append(bUndo, bClear, bSave, bHide, bClose);
-
-  function refresh() {
-    svg.style.display = notesVisible ? "" : "none";
-    bHide.textContent = notesVisible ? "Hide notes" : "Show notes";
-    bDraw.classList.toggle("on", drawMode);
-    bMove.classList.toggle("on", !drawMode);
-    bPen.classList.toggle("on", tool === "pen");
-    bMarker.classList.toggle("on", tool === "marker");
-    bErase.classList.toggle("on", tool === "erase");
-    sizeBtns.forEach(function (b, i) {
-      b.classList.toggle("on", i === sizeIdx);
-      b.style.opacity = tool === "erase" ? ".4" : "1";
-    });
-    swBtns.forEach(function (b, i) {
-      b.classList.toggle("on", tool !== "erase" && COLORS[i] === color);
-    });
-    catcher.style.display = barOpen && drawMode && notesVisible ? "block" : "none";
-  }
-
-  function setMode(draw) {
-    if (draw && !notesVisible) notesVisible = true;
-    drawMode = draw;
-    refresh();
-  }
-
-  function openBar(open) {
-    barOpen = open;
-    bar.style.display = open ? "flex" : "none";
-    fab.style.display = open ? "none" : "";
-    if (open) drawMode = true;
-    refresh();
-  }
-
-  // ---------- drawing ----------
-  function removeStroke(s) {
-    if (s.el.parentNode) s.el.parentNode.removeChild(s.el);
-  }
-
-  function eraseAt(q) {
-    var R = 14 / scaleNow();
-    var keep = [];
-    var changed = false;
-    strokes.forEach(function (s) {
-      var hit = s.p.some(function (pt) {
-        return Math.hypot(pt[0] - q[0], pt[1] - q[1]) < R;
-      });
-      if (hit) { removeStroke(s); changed = true; } else keep.push(s);
-    });
-    if (changed) strokes = keep;
-  }
-
-  function cancelCurrent() {
-    if (cur) {
-      removeStroke(cur);
-      strokes = strokes.filter(function (s) { return s !== cur; });
-    }
-    cur = null;
-    erasing = false;
-  }
-
-  catcher.addEventListener("pointerdown", function (e) {
-    e.preventDefault();
-    nActive++;
-    if (nActive > 1) { cancelCurrent(); return; }
-    try { catcher.setPointerCapture(e.pointerId); } catch (_) {}
-    var q = toLocal(e);
-    if (!q) return;
-    if (tool === "erase") { erasing = true; eraseAt(q); return; }
-    var px = SIZES[tool][sizeIdx];
-    cur = {
-      c: color,
-      w: Math.round((px / scaleNow()) * 100) / 100,
-      a: tool === "marker" ? 0.35 : 1,
-      p: [q]
-    };
-    cur.el = makePath(cur);
-    svg.appendChild(cur.el);
-    strokes.push(cur);
-  });
-
-  catcher.addEventListener("pointermove", function (e) {
-    if (nActive !== 1) return;
-    var q = toLocal(e);
-    if (!q) return;
-    if (erasing) { eraseAt(q); return; }
-    if (!cur) return;
-    var last = cur.p[cur.p.length - 1];
-    if (Math.hypot(q[0] - last[0], q[1] - last[1]) < 0.6 / scaleNow()) return;
-    cur.p.push(q);
-    cur.el.setAttribute("d", pathD(cur.p));
-  });
-
-  function end() {
-    nActive = Math.max(0, nActive - 1);
-    if (nActive === 0 && (cur || erasing)) {
-      cur = null;
-      erasing = false;
-      save();
-    }
-  }
-  catcher.addEventListener("pointerup", end);
-  catcher.addEventListener("pointercancel", end);
-
-  refresh();
-})();
+  var gTool = group("Tool", panel);
+  var rowTool = el("div", "annRow", null, gTool);
+  var bPen = mkBtn("✏️ Pen", function () { tool = "pen"
