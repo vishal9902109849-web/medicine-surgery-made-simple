@@ -262,6 +262,7 @@
     b.setAttribute("aria-label", "Colour " + c);
     b.addEventListener("click", function () {
       color = c;
+      if (tool === "select" && recolorSel(c)) { refresh(); return; }
       if (tool === "erase") tool = "pen";
       refresh();
     });
@@ -275,6 +276,7 @@
   custom.appendChild(picker);
   picker.addEventListener("input", function () {
     color = picker.value;
+    if (tool === "select") recolorSel(picker.value);
     if (tool === "erase") tool = "pen";
     refresh();
   });
