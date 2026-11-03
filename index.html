@@ -99,20 +99,38 @@ footer{text-align:center;background:var(--navy);color:white;padding:30px;font-si
  <section id="subjects">
   <h2>Explore Subjects</h2>
   <p class="sub">Choose your area of study.</p>
-  <div class="grid">
-   <div class="card" onclick="chooseSubject('Medicine')">
+<div class="grid">
+
+  <div class="card" onclick="chooseSubject('Medicine')">
     <div class="icon">🩺</div>
     <h3>Medicine</h3>
     <p>Clinical medicine and systemic disorders.</p>
     <button class="secondary" style="margin-top:17px">Explore Medicine →</button>
-   </div>
-   <div class="card" onclick="chooseSubject('Surgery')">
-    <div class="icon">⚕</div>
+  </div>
+
+  <div class="card" onclick="chooseSubject('Surgery')">
+    <div class="icon">⚕️</div>
     <h3>Surgery</h3>
     <p>Surgical principles and specialties.</p>
     <button class="secondary" style="margin-top:17px">Explore Surgery →</button>
-   </div>
   </div>
+
+  <div class="card" onclick="chooseSubject('OBG')">
+    <div class="icon">🤰</div>
+    <h3>OBG</h3>
+    <p>Obstetrics and Gynaecology notes and mind maps.</p>
+    <button class="secondary" style="margin-top:17px">Explore OBG →</button>
+  </div>
+
+  <div class="card" onclick="chooseSubject('First Aid')">
+    <div class="icon">📘</div>
+    <h3>First Aid</h3>
+    <p>USMLE First Aid notes and visual mind maps.</p>
+    <button class="secondary" style="margin-top:17px">Explore First Aid →</button>
+  </div>
+
+</div>
+
  </section>
 
  <section id="library">
@@ -158,8 +176,10 @@ footer{text-align:center;background:var(--navy);color:white;padding:30px;font-si
     <div class="field">
      <label>Subject</label>
      <select id="subject">
-      <option>Medicine</option>
-      <option>Surgery</option>
+    <option>Medicine</option>
+    <option>Surgery</option>
+    <option>OBG</option>
+    <option>First Aid</option>
      </select>
     </div>
     <div class="field">
