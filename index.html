@@ -346,7 +346,15 @@ document.getElementById("uploadForm").addEventListener("submit",async e=>{
  if(file.size>25*1024*1024){status.textContent="Maximum file size is 25 MB.";return;}
  status.textContent="Uploading...";
  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
- const path=crypto.randomUUID()+"-"+safeName;
+ const subject = document.getElementById("subject").value
+  .toLowerCase()
+  .replace(/\s+/g, "-");
+
+const type = document.getElementById("type").value === "Notes"
+  ? "notes"
+  : "mindmaps";
+
+const path = `${subject}/${type}/${crypto.randomUUID()}-${safeName}`;
  try{
   const {error:uploadError}=await db.storage.from("medical-resources").upload(path,file,{upsert:false});
   if(uploadError)throw uploadError;
