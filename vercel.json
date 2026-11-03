@@ -1,6 +1,8 @@
 {
   "rewrites": [
     { "source": "/surgery/:path*", "destination": "/api/file?path=surgery/:path*" },
-    { "source": "/medicine/:path*", "destination": "/api/file?path=medicine/:path*" }
+    { "source": "/medicine/:path*", "destination": "/api/file?path=medicine/:path*" },
+    { "source": "/obg/:path*", "destination": "/api/file?path=obg/:path*" },
+    { "source": "/first-aid/:path*", "destination": "/api/file?path=first-aid/:path*" }
   ]
 }
