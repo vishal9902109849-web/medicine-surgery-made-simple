@@ -642,8 +642,10 @@ undo = function () {
 var NODE_SEL = window.__ANN_NODE || "";
 var NODE_CLS = /node|card|box|item|topic|branch|leaf|bubble|label|chip|block|cell/i;
 function ours(e) { return !!(e && e.closest && e.closest("#annUI,#annCatch,#annSvg")); }
-function norm(t) { return (t || "").replace(/\s+/g, " ").trim().slice(0, 40); }
-function cls(e) { return e.getAttribute("class") || ""; }
+function norm(t) {
+  return (t || "").replace(/[^\p{L}\p{N}]+/gu, " ").trim().slice(0, 30);
+}
+  function cls(e) { return e.getAttribute("class") || ""; }
 function shown(e) {
   var r = e.getBoundingClientRect();
   return r.width > 1 && r.height > 1 && getComputedStyle(e).visibility !== "hidden";
@@ -687,7 +689,7 @@ function pickAnchor(s) {
 }
 function sameNodes(n) {
   return [].slice.call(document.querySelectorAll(n.tag)).filter(function (o) {
-    return !ours(o) && cls(o) === n.cls && norm(o.textContent) === n.t;
+    return !ours(o) && norm(o.textContent) === n.t;
   });
 }
 function describe(e) {
