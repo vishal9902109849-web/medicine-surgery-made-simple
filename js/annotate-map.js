@@ -623,6 +623,21 @@ undo = function () {
   if (s && s.el.parentNode) s.el.parentNode.removeChild(s.el);
   save();
 };
+  var adoptTries = 0;
+(function adopt() {
+  if (!useBody) return;
+  var w = findWorld();
+  if (w) {
+    if (getComputedStyle(w).position === "static") w.style.position = "relative";
+    w.appendChild(svg);
+    host = w;
+    useBody = false;
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    return;
+  }
+  if (++adoptTries < 40) setTimeout(adopt, 250);
+})();
   applyCorner();
   setState("closed");
 
