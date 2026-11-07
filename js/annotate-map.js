@@ -30,9 +30,25 @@
     }, true);
   }
 
-  var stage = document.getElementById("stage") || document.getElementById("world");
-  var useBody = !stage;
-  var host = stage || document.body;
+  function findWorld() {
+  var ids = ["world", "stage", "canvas", "viewport", "map", "mindmap", "content"];
+  for (var i = 0; i < ids.length; i++) {
+    var e = document.getElementById(ids[i]);
+    if (e && getComputedStyle(e).transform !== "none") return e;
+  }
+  // Fallback: the transformed element containing the most descendants
+  var best = null, bestN = 0;
+  document.querySelectorAll("body *").forEach(function (e) {
+    if (e.closest && e.closest("#annUI,#annCatch")) return;
+    if (getComputedStyle(e).transform === "none") return;
+    var n = e.getElementsByTagName("*").length;
+    if (n > bestN) { best = e; bestN = n; }
+  });
+  return best;
+}
+var stage = findWorld();
+var useBody = !stage;
+var host = stage || document.body;
 
   // The drawing layer lives INSIDE the zooming layer, so it zooms and pans with the map.
   var svg = document.createElementNS(NS, "svg");
