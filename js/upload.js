@@ -12,6 +12,8 @@ const MIME = {
   jpeg: "image/jpeg",
   webp: "image/webp",
   gif: "image/gif",
+  json: "application/json",
+};
 };
 
 export const ACCEPT = Object.keys(MIME).map((e) => "." + e).join(",");
@@ -32,8 +34,7 @@ export function validateForm({ title, subject, type, file }) {
   if (!type) return "Please select a type.";
   if (!file) return "Please choose a file.";
   if (!MIME[extOf(file.name)])
-    return "File type not allowed. Use HTML, PDF, PNG, JPG, WEBP or GIF.";
-  if (file.size === 0) return "That file is empty.";
+    return "File type not allowed. Use HTML, PDF, PNG, JPG, WEBP, GIF or JSON.";  if (file.size === 0) return "That file is empty.";
   if (file.size > MAX_MB * 1024 * 1024)
     return `File is too large. Maximum is ${MAX_MB} MB.`;
   return "";
