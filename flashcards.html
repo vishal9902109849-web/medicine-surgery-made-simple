@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flashcards</title>
+<style>
+:root{--bg:#f2f5f7;--ink:#14232e;--muted:#5b6b76;--card:#ffffff;--back:#e6f2f0;--line:#cfdae0;--accent:#0f766e;--warn:#b45309}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;padding:14px;gap:12px}
+header{width:100%;max-width:640px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h1{font-size:1.05rem;margin:0;font-weight:650}
+#count{color:var(--muted);font-size:.9rem;white-space:nowrap}
+#bar{width:100%;max-width:640px;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+#bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+#stage{width:100%;max-width:640px;flex:1;min-height:260px;max-height:62vh;perspective:1200px}
+#card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .4s;cursor:pointer;touch-action:pan-y}
+#card.flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;justify-content:center;overflow:auto}
+.face.b{transform:rotateY(180deg);background:var(--back);border-color:#9ccdc6}
+.tag{position:absolute;top:10px;left:14px;font-size:.78rem;color:var(--muted)}
+.txt{white-space:pre-wrap;font-size:1.2rem;text-align:center;margin:auto 0}
+.hint{position:absolute;bottom:10px;width:100%;left:0;text-align:center;font-size:.78rem;color:var(--muted)}
+.row{width:100%;max-width:640px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row.three{grid-template-columns:1fr 1fr 1fr}
+button{font:inherit;padding:13px 8px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.ok{background:var(--accent);border-color:var(--accent);color:#fff}
+button.rv{border-color:var(--warn);color:var(--warn)}
+#end,#msg{display:none;width:100%;max-width:640px;text-align:center;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:26px}
+#msg{display:block}
+@media (prefers-reduced-motion:reduce){#card,#bar i{transition:none}}
+</style>
+</head>
+<body>
+<header><h1 id="title">Flashcards</h1><span id="count"></span></header>
+<div id="bar"><i id="fill"></i></div>
+<div id="msg">Loading deck…</div>
+<div id="stage" hidden>
+  <div id="card" tabindex="0" aria-label="Flashcard. Press space to flip.">
+    <div class="face f"><span class="tag">Question</span><div class="txt" id="front"></div><span class="hint">Tap to flip</span></div>
+    <div class="face b"><span class="tag">Answer</span><div class="txt" id="back"></div></div>
+  </div>
+</div>
+<div class="row" id="nav" hidden><button id="prev">Previous</button><button id="next">Next</button></div>
+<div class="row" id="grade" hidden><button class="rv" id="again">Review again</button><button class="ok" id="know">I know it</button></div>
+<div class="row three" id="tools" hidden><button id="shuf">Shuffle</button><button id="rst">Restart</button><button id="only">Missed only</button></div>
+<div id="end"><h2 id="endTitle" style="margin-top:0"></h2><p id="endText"></p>
+  <div class="row"><button id="endMissed">Review missed</button><button class="ok" id="endRestart">Start over</button></div></div>
+
+<script>
+// ===== EDIT THIS ONE LINE: same Supabase URL as in js/config.js =====
+const SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL_HERE";
+const BUCKET = "medical-resources";
+// ====================================================================
+
+const $ = id => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+let all = [], order = [], idx = 0, known = new Set(), missed = new Set();
+
+function srcUrl(){
+  if (q.get("url")) return q.get("url");
+  const p = q.get("path");
+  if (!p) return null;
+  return SUPABASE_URL.replace(/\/$/,"") + "/storage/v1/object/public/" + BUCKET + "/" + p.split("/").map(encodeURIComponent).join("/");
+}
+function say(t){ const m=$("msg"); m.textContent=t; m.style.display="block"; }
+
+async function load(){
+  const u = srcUrl();
+  if (!u) return say("No deck selected. Open a deck from the Resources page.");
+  try{
+    const r = await fetch(u);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    if (!d || !Array.isArray(d.cards) || !d.cards.length) throw new Error("No cards in file");
+    all = d.cards.filter(c => c && c.front && c.back);
+    $("title").textContent = d.title || "Flashcards";
+    document.title = (d.title || "Flashcards") + " – Flashcards";
+    $("msg").style.display = "none";
+    ["stage","nav","grade","tools"].forEach(i => $(i).hidden = false);
+    start(all.map((_, i) => i));
+  }catch(e){
+    say("Could not load the deck (" + e.message + "). Check the file path and that the bucket is public.");
+  }
+}
+
+function start(list){
+  order = list.slice(); idx = 0; known = new Set(); missed = new Set();
+  $("end").style.display = "none";
+  ["stage","nav","grade","tools"].forEach(i => $(i).hidden = false);
+  show();
+}
+function show(){
+  $("card").classList.remove("flip");
+  const c = all[order[idx]];
+  $("front").textContent = c.front;
+  $("back").textContent = c.back;
+  $("count").textContent = (idx + 1) + " / " + order.length;
+  $("fill").style.width = ((idx + 1) / order.length * 100) + "%";
+}
+function flip(){ $("card").classList.toggle("flip"); }
+function go(d){
+  const n = idx + d;
+  if (n < 0) return;
+  if (n >= order.length) return finish();
+  idx = n; show();
+}
+function mark(ok){
+  const id = order[idx];
+  if (ok){ known.add(id); missed.delete(id); } else { missed.add(id); known.delete(id); }
+  go(1);
+}
+function finish(){
+  ["stage","nav","grade","tools"].forEach(i => $(i).hidden = true);
+  $("fill").style.width = "100%";
+  $("endTitle").textContent = "Deck finished";
+  $("endText").textContent = known.size + " known, " + missed.size + " to review, " + (order.length - known.size - missed.size) + " not marked.";
+  $("endMissed").disabled = missed.size === 0;
+  $("end").style.display = "block";
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+$("card").addEventListener("click", flip);
+$("prev").onclick = () => go(-1);
+$("next").onclick = () => go(1);
+$("know").onclick = () => mark(true);
+$("again").onclick = () => mark(false);
+$("shuf").onclick = () => start(shuffle(all.map((_, i) => i)));
+$("rst").onclick = () => start(all.map((_, i) => i));
+$("only").onclick = () => { if (missed.size) start([...missed]); };
+$("endMissed").onclick = () => start([...missed]);
+$("endRestart").onclick = () => start(all.map((_, i) => i));
+
+document.addEventListener("keydown", e => {
+  if (e.key === " "){ e.preventDefault(); flip(); }
+  else if (e.key === "ArrowRight") go(1);
+  else if (e.key === "ArrowLeft") go(-1);
+});
+let sx = null;
+$("card").addEventListener("touchstart", e => { sx = e.touches[0].clientX; }, {passive:true});
+$("card").addEventListener("touchend", e => {
+  if (sx === null) return;
+  const dx = e.changedTouches[0].clientX - sx; sx = null;
+  if (Math.abs(dx) > 60){ e.preventDefault(); go(dx < 0 ? 1 : -1); }
+});
+
+load();
+</script>
+</body>
+</html>
