@@ -12,7 +12,7 @@ const TYPES = {
   gif: "image/gif",
   json: "application/json; charset=utf-8",
 };
-};
+
 
 const INJECT = '<script src="/js/annotate-map.js"></script>';
 
