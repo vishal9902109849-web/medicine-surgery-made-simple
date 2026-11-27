@@ -9,6 +9,7 @@ const urlFor = (path) =>
 const extOf = (path) => (path.split(".").pop() || "").toLowerCase();
 const isImage = (e) => ["png", "jpg", "jpeg", "webp", "gif"].includes(e);
 const isHtml = (e) => e === "html" || e === "htm";
+const isDeck = (e) => e === "json";
 const shareUrl = (r) => location.origin + location.pathname + "#" + r.id;
 
 // Added to every mind map: the drawing layer, saved under the file's path.
@@ -88,7 +89,11 @@ function card(r) {
 
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.textContent = isHtml(ext) ? "Open mind map" : "Open";
+  btn.textContent = isHtml(ext)
+  ? "Open mind map"
+  : isDeck(ext)
+  ? "Study flashcards"
+  : "Open";
   btn.addEventListener("click", () => open(r));
   el.appendChild(btn);
 
@@ -120,6 +125,14 @@ async function copyLink(r, btn) {
 async function open(r) {
   const ext = extOf(r.file_path);
   const url = urlFor(r.file_path);
+  if (isDeck(ext)) {
+  window.open(
+    "/flashcards.html?path=" + encodeURIComponent(r.file_path),
+    "_blank",
+    "noopener"
+  );
+  return;
+  }
 if (ext === "pdf") {
     window.open(
       "/pdf.html?file=" + encodeURIComponent(url),
