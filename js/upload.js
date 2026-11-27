@@ -13,7 +13,7 @@ const MIME = {
   webp: "image/webp",
   gif: "image/gif",
   json: "application/json",
-};
+
 };
 
 export const ACCEPT = Object.keys(MIME).map((e) => "." + e).join(",");
