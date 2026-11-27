@@ -287,7 +287,9 @@ async function renderResources(){
     : "./" + r.file_path;
 if(/\.pdf$/i.test(r.file_name||"")||/\.pdf$/i.test(r.file_path)) a.href="/pdf.html?file="+encodeURIComponent(a.href);   a.target="_blank";
    a.rel="noopener noreferrer";
-   a.textContent=r.file_name.toLowerCase().endsWith(".html")||r.file_name.toLowerCase().endsWith(".htm")?"Open Mind Map ↗":"View / Download PDF ↗";
+   const isDeck=/\.json$/i.test(r.file_path);
+   if(isDeck) a.href="/flashcards.html?path="+encodeURIComponent(r.file_path);
+   a.textContent=isDeck?"Study Flashcards ↗":(r.file_name.toLowerCase().endsWith(".html")||r.file_name.toLowerCase().endsWith(".htm")?"Open Mind Map ↗":"View / Download PDF ↗");
    card.append(h,p,a);
    list.appendChild(card);
   });
