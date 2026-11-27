@@ -143,7 +143,7 @@ const BUCKET = "medical-resources";
 const EMBEDDED = {"title": "Sample Deck (test)", "subject": "Surgery", "cards": [{"front": "Which nerve is at risk during thyroidectomy and causes hoarseness if injured?", "back": "Recurrent laryngeal nerve", "tags": ["thyroid"]}, {"front": "Which gland's blood supply is at risk during total thyroidectomy, causing hypocalcaemia?", "back": "Parathyroid glands (inferior parathyroid supplied by the inferior thyroid artery)", "tags": ["thyroid"]}, {"front": "Most common type of thyroid cancer?", "back": "Papillary carcinoma", "tags": ["thyroid"]}]};
 const $ = id => document.getElementById(id);
 const q = new URLSearchParams(location.search);
-let all = [], order = [], idx = 0, known = new Set(), missed = new Set(), first = {}, streak = 0, xp = 0, revealed = false, locked = false;
+let MEDIA = {}, BASE = "", all = [], order = [], idx = 0, known = new Set(), missed = new Set(), first = {}, streak = 0, xp = 0, revealed = false, locked = false;
 
 const BRAIN = `<g id="bx">
 <ellipse cx="50" cy="106" rx="28" ry="3.5" fill="#000" opacity=".12"/>
@@ -198,6 +198,7 @@ async function load(){
     if (u === "embedded-sample") d = EMBEDDED;
     else { const r = await fetch(u); if (!r.ok) throw new Error("HTTP " + r.status); d = await r.json(); }
     if (!d || !Array.isArray(d.cards) || !d.cards.length) throw new Error("No cards in file");
+    MEDIA = d.media || {}; BASE = (u === "embedded-sample") ? "" : u.replace(/[^\/]*$/, "");
     all = d.cards.filter(c => c && c.front && c.back);
     $("title").textContent = d.title || "Flashcards";
     document.title = (d.title || "Flashcards") + " – Flashcards";
@@ -241,6 +242,14 @@ function show(){
   if (!ex && ans.includes("\n")){ const k = ans.indexOf("\n"); ex = ans.slice(k+1).trim(); ans = ans.slice(0,k).trim(); }
   const s = el("div","sec"); s.append(el("p","ans",ans));
   if (c.back_image) s.append(img(c.back_image));
+  const mu = n => { n = (n && n.name) ? (n.data || n.name) : n; return MEDIA[n] || (/^(data:|https?:|\/)/.test(n) ? n : BASE + "media/" + n); };
+  if (c.explanation_html){
+    const h = el("div","expl");
+    h.innerHTML = c.explanation_html.replace(/src="([^"]+)"/g, (m, n) => 'src="' + mu(n) + '"');
+    s.append(h);
+  } else if (Array.isArray(c.images) && !c.back_image){
+    c.images.forEach(n => s.append(img(mu(n))));
+  }
   if (ex) s.append(el("p","expl",ex));
   if (c.audio){ const a = el("audio","audio"); a.controls = true; a.src = c.audio; s.append(a); }
   b.append(s);
